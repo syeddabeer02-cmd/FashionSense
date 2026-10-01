@@ -5,6 +5,8 @@ import com.fashionsense.auth.EmailAlreadyRegisteredException;
 import com.fashionsense.auth.EmailAlreadyVerifiedException;
 import com.fashionsense.auth.InvalidCredentialsException;
 import com.fashionsense.auth.InvalidVerificationTokenException;
+import com.fashionsense.cart.CartItemNotFoundException;
+import com.fashionsense.cart.CartItemUnavailableException;
 import com.fashionsense.catalog.brand.BrandAlreadyExistsException;
 import com.fashionsense.catalog.brand.BrandNotFoundException;
 import com.fashionsense.catalog.category.CategoryAlreadyExistsException;
@@ -17,6 +19,8 @@ import com.fashionsense.catalog.product.ProductNotFoundException;
 import com.fashionsense.catalog.variant.ProductVariantAlreadyExistsException;
 import com.fashionsense.catalog.variant.ProductVariantNotFoundException;
 import com.fashionsense.customer.address.AddressNotFoundException;
+import com.fashionsense.order.EmptyCartException;
+import com.fashionsense.order.OrderNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,7 +39,9 @@ public class GlobalExceptionHandler {
             ProductVariantNotFoundException.class,
             ProductImageNotFoundException.class,
             OccasionNotFoundException.class,
-            AddressNotFoundException.class
+            AddressNotFoundException.class,
+            CartItemNotFoundException.class,
+            OrderNotFoundException.class
     })
     public ResponseEntity<Map<String, Object>> handleNotFound(
             RuntimeException ex
@@ -112,11 +118,13 @@ public class GlobalExceptionHandler {
                 );
     }
 
-    @ExceptionHandler(
-            InvalidVerificationTokenException.class
-    )
+    @ExceptionHandler({
+            InvalidVerificationTokenException.class,
+            CartItemUnavailableException.class,
+            EmptyCartException.class
+    })
     public ResponseEntity<Map<String, Object>> handleBadRequest(
-            InvalidVerificationTokenException ex
+            RuntimeException ex
     ) {
 
         return ResponseEntity
