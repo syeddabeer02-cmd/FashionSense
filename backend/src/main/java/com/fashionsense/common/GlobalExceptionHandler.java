@@ -4,6 +4,8 @@ import com.fashionsense.catalog.brand.BrandAlreadyExistsException;
 import com.fashionsense.catalog.brand.BrandNotFoundException;
 import com.fashionsense.catalog.category.CategoryAlreadyExistsException;
 import com.fashionsense.catalog.category.CategoryNotFoundException;
+import com.fashionsense.catalog.image.ProductImageNotFoundException;
+import com.fashionsense.catalog.image.ProductPrimaryImageAlreadyExistsException;
 import com.fashionsense.catalog.product.ProductAlreadyExistsException;
 import com.fashionsense.catalog.product.ProductNotFoundException;
 import com.fashionsense.catalog.variant.ProductVariantAlreadyExistsException;
@@ -19,9 +21,15 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BrandNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleBrandNotFound(
-            BrandNotFoundException ex
+    @ExceptionHandler({
+            BrandNotFoundException.class,
+            CategoryNotFoundException.class,
+            ProductNotFoundException.class,
+            ProductVariantNotFoundException.class,
+            ProductImageNotFoundException.class
+    })
+    public ResponseEntity<Map<String, Object>> handleNotFound(
+            RuntimeException ex
     ) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
@@ -32,87 +40,15 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(BrandAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleBrandAlreadyExists(
-            BrandAlreadyExistsException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorBody(
-                        409,
-                        "Conflict",
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(CategoryNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleCategoryNotFound(
-            CategoryNotFoundException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorBody(
-                        404,
-                        "Not Found",
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(CategoryAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleCategoryAlreadyExists(
-            CategoryAlreadyExistsException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorBody(
-                        409,
-                        "Conflict",
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleProductNotFound(
-            ProductNotFoundException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorBody(
-                        404,
-                        "Not Found",
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(ProductAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleProductAlreadyExists(
-            ProductAlreadyExistsException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorBody(
-                        409,
-                        "Conflict",
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(ProductVariantNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleProductVariantNotFound(
-            ProductVariantNotFoundException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorBody(
-                        404,
-                        "Not Found",
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(ProductVariantAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleProductVariantAlreadyExists(
-            ProductVariantAlreadyExistsException ex
+    @ExceptionHandler({
+            BrandAlreadyExistsException.class,
+            CategoryAlreadyExistsException.class,
+            ProductAlreadyExistsException.class,
+            ProductVariantAlreadyExistsException.class,
+            ProductPrimaryImageAlreadyExistsException.class
+    })
+    public ResponseEntity<Map<String, Object>> handleConflict(
+            RuntimeException ex
     ) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
