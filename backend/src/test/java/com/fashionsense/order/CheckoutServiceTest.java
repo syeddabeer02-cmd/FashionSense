@@ -12,6 +12,7 @@ import com.fashionsense.customer.User;
 import com.fashionsense.customer.UserRepository;
 import com.fashionsense.customer.address.Address;
 import com.fashionsense.customer.address.AddressRepository;
+import com.fashionsense.promotion.PromotionEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,9 +41,14 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CheckoutServiceTest {
 
-    private static final Long USER_ID = 1L;
-    private static final Long ADDRESS_ID = 100L;
-    private static final Long CART_ID = 300L;
+    private static final Long USER_ID =
+            1L;
+
+    private static final Long ADDRESS_ID =
+            100L;
+
+    private static final Long CART_ID =
+            300L;
 
     @Mock
     private CartRepository cartRepository;
@@ -65,31 +74,62 @@ class CheckoutServiceTest {
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
 
+    @Mock
+    private PromotionEngine promotionEngine;
+
     private CheckoutService checkoutService;
 
     @BeforeEach
     void setUp() {
 
-        checkoutService = new CheckoutService(
-                cartRepository,
-                cartItemRepository,
-                userRepository,
-                addressRepository,
-                orderRepository,
-                orderItemRepository,
-                productCacheService,
-                applicationEventPublisher
-        );
+        lenient()
+                .when(
+                        promotionEngine
+                                .calculateBestProductDiscount(
+                                        nullable(Long.class),
+                                        any(BigDecimal.class),
+                                        anyInt()
+                                )
+                )
+                .thenReturn(
+                        new BigDecimal("0.00")
+                );
+
+        lenient()
+                .when(
+                        promotionEngine
+                                .calculateCartDiscount(
+                                        nullable(String.class),
+                                        any(BigDecimal.class)
+                                )
+                )
+                .thenReturn(
+                        new BigDecimal("0.00")
+                );
+
+        checkoutService =
+                new CheckoutService(
+                        cartRepository,
+                        cartItemRepository,
+                        userRepository,
+                        addressRepository,
+                        orderRepository,
+                        orderItemRepository,
+                        productCacheService,
+                        applicationEventPublisher,
+                        promotionEngine
+                );
     }
 
     @Test
     void standardCheckoutOverThresholdUsesFreeShippingAndCalculatesTax() {
 
-        TestData testData = prepareCheckout(
-                new BigDecimal("79.99"),
-                10,
-                1
-        );
+        TestData testData =
+                prepareCheckout(
+                        new BigDecimal("79.99"),
+                        10,
+                        1
+                );
 
         stubSuccessfulPersistence();
 
@@ -97,7 +137,8 @@ class CheckoutServiceTest {
                 new CheckoutRequest(
                         ADDRESS_ID,
                         ShippingMethod.STANDARD,
-                        PaymentMethod.CARD
+                        PaymentMethod.CARD,
+                        null
                 );
 
         OrderResponse response =
@@ -109,6 +150,11 @@ class CheckoutServiceTest {
         assertEquals(
                 new BigDecimal("79.99"),
                 response.subtotal()
+        );
+
+        assertEquals(
+                new BigDecimal("0.00"),
+                response.discountAmount()
         );
 
         assertEquals(
@@ -210,26 +256,38 @@ class CheckoutServiceTest {
 
         verify(applicationEventPublisher)
                 .publishEvent(
-                        org.mockito.ArgumentMatchers.<Object>argThat(event ->
-                                event instanceof OrderConfirmedEvent confirmedEvent
-                                        && USER_ID.equals(
-                                                confirmedEvent.userId()
-                                        )
-                                        && response.orderNumber().equals(
-                                                confirmedEvent.orderNumber()
-                                        )
-                                        && new BigDecimal("86.59")
-                                        .compareTo(
-                                                confirmedEvent.totalAmount()
-                                        ) == 0
-                                        && "STANDARD".equals(
-                                                confirmedEvent.shippingMethod()
-                                        )
-                                        && "CARD".equals(
-                                                confirmedEvent.paymentMethod()
-                                        )
-                                        && confirmedEvent.occurredAt() != null
-                        )
+                        org.mockito.ArgumentMatchers
+                                .<Object>argThat(
+                                        event ->
+                                                event
+                                                        instanceof OrderConfirmedEvent confirmedEvent
+                                                        && USER_ID.equals(
+                                                        confirmedEvent.userId()
+                                                )
+                                                        && response
+                                                        .orderNumber()
+                                                        .equals(
+                                                                confirmedEvent
+                                                                        .orderNumber()
+                                                        )
+                                                        && new BigDecimal(
+                                                        "86.59"
+                                                ).compareTo(
+                                                        confirmedEvent
+                                                                .totalAmount()
+                                                ) == 0
+                                                        && "STANDARD".equals(
+                                                        confirmedEvent
+                                                                .shippingMethod()
+                                                )
+                                                        && "CARD".equals(
+                                                        confirmedEvent
+                                                                .paymentMethod()
+                                                )
+                                                        && confirmedEvent
+                                                        .occurredAt()
+                                                        != null
+                                )
                 );
     }
 
@@ -248,7 +306,8 @@ class CheckoutServiceTest {
                 new CheckoutRequest(
                         ADDRESS_ID,
                         ShippingMethod.EXPRESS,
-                        PaymentMethod.PAYPAL
+                        PaymentMethod.PAYPAL,
+                        null
                 );
 
         OrderResponse response =
@@ -260,6 +319,11 @@ class CheckoutServiceTest {
         assertEquals(
                 new BigDecimal("79.99"),
                 response.subtotal()
+        );
+
+        assertEquals(
+                new BigDecimal("0.00"),
+                response.discountAmount()
         );
 
         assertEquals(
@@ -304,7 +368,9 @@ class CheckoutServiceTest {
 
         verify(applicationEventPublisher)
                 .publishEvent(
-                        any(OrderConfirmedEvent.class)
+                        any(
+                                OrderConfirmedEvent.class
+                        )
                 );
     }
 
@@ -323,7 +389,8 @@ class CheckoutServiceTest {
                 new CheckoutRequest(
                         ADDRESS_ID,
                         ShippingMethod.STANDARD,
-                        PaymentMethod.CARD
+                        PaymentMethod.CARD,
+                        null
                 );
 
         OrderResponse response =
@@ -335,6 +402,11 @@ class CheckoutServiceTest {
         assertEquals(
                 new BigDecimal("50.00"),
                 response.subtotal()
+        );
+
+        assertEquals(
+                new BigDecimal("0.00"),
+                response.discountAmount()
         );
 
         assertEquals(
@@ -359,7 +431,132 @@ class CheckoutServiceTest {
 
         verify(applicationEventPublisher)
                 .publishEvent(
-                        any(OrderConfirmedEvent.class)
+                        any(
+                                OrderConfirmedEvent.class
+                        )
+                );
+    }
+
+    @Test
+    void checkoutAppliesProductAndCartPromotionsBeforeShippingAndTax() {
+
+        prepareCheckout(
+                new BigDecimal("79.99"),
+                10,
+                1
+        );
+
+        when(
+                promotionEngine
+                        .calculateBestProductDiscount(
+                                nullable(Long.class),
+                                any(BigDecimal.class),
+                                anyInt()
+                        )
+        ).thenReturn(
+                new BigDecimal("10.00")
+        );
+
+        when(
+                promotionEngine
+                        .calculateCartDiscount(
+                                "SAVE5",
+                                new BigDecimal("69.99")
+                        )
+        ).thenReturn(
+                new BigDecimal("5.00")
+        );
+
+        stubSuccessfulPersistence();
+
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD,
+                        "SAVE5"
+                );
+
+        OrderResponse response =
+                checkoutService.checkout(
+                        USER_ID,
+                        request
+                );
+
+        assertEquals(
+                new BigDecimal("79.99"),
+                response.subtotal()
+        );
+
+        assertEquals(
+                new BigDecimal("15.00"),
+                response.discountAmount()
+        );
+
+        /*
+         * 79.99
+         * - 10.00 product discount
+         * -  5.00 cart promotion
+         * = 64.99 discounted merchandise subtotal
+         *
+         * 64.99 is below the $75 free
+         * standard-shipping threshold.
+         */
+        assertEquals(
+                new BigDecimal("5.99"),
+                response.shippingAmount()
+        );
+
+        /*
+         * Tax:
+         * 64.99 * 8.25% = 5.36
+         */
+        assertEquals(
+                new BigDecimal("5.36"),
+                response.taxAmount()
+        );
+
+        /*
+         * 64.99
+         * + 5.99 shipping
+         * + 5.36 tax
+         * = 76.34
+         */
+        assertEquals(
+                new BigDecimal("76.34"),
+                response.totalAmount()
+        );
+
+        assertEquals(
+                "CONFIRMED",
+                response.status()
+        );
+
+        assertEquals(
+                "SUCCEEDED",
+                response.paymentStatus()
+        );
+
+        verify(promotionEngine)
+                .calculateCartDiscount(
+                        "SAVE5",
+                        new BigDecimal("69.99")
+                );
+
+        verify(applicationEventPublisher)
+                .publishEvent(
+                        org.mockito.ArgumentMatchers
+                                .<Object>argThat(
+                                        event ->
+                                                event
+                                                        instanceof OrderConfirmedEvent confirmedEvent
+                                                        && new BigDecimal(
+                                                        "76.34"
+                                                ).compareTo(
+                                                        confirmedEvent
+                                                                .totalAmount()
+                                                ) == 0
+                                )
                 );
     }
 
@@ -376,7 +573,8 @@ class CheckoutServiceTest {
                 new CheckoutRequest(
                         ADDRESS_ID,
                         ShippingMethod.STANDARD,
-                        PaymentMethod.CARD
+                        PaymentMethod.CARD,
+                        null
                 );
 
         CartItemUnavailableException exception =
@@ -398,7 +596,8 @@ class CheckoutServiceTest {
                 orderRepository,
                 orderItemRepository,
                 productCacheService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                promotionEngine
         );
 
         verify(cartItemRepository, never())
@@ -424,7 +623,8 @@ class CheckoutServiceTest {
                 new CheckoutRequest(
                         ADDRESS_ID,
                         ShippingMethod.STANDARD,
-                        PaymentMethod.CARD
+                        PaymentMethod.CARD,
+                        null
                 );
 
         CartItemUnavailableException exception =
@@ -446,7 +646,8 @@ class CheckoutServiceTest {
                 orderRepository,
                 orderItemRepository,
                 productCacheService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                promotionEngine
         );
 
         verify(cartItemRepository, never())
@@ -474,10 +675,14 @@ class CheckoutServiceTest {
                         CART_ID
                 );
 
-        when(userRepository.findById(USER_ID))
-                .thenReturn(
-                        Optional.of(user)
-                );
+        when(
+                userRepository
+                        .findById(
+                                USER_ID
+                        )
+        ).thenReturn(
+                Optional.of(user)
+        );
 
         when(
                 addressRepository
@@ -511,7 +716,8 @@ class CheckoutServiceTest {
                 new CheckoutRequest(
                         ADDRESS_ID,
                         ShippingMethod.STANDARD,
-                        PaymentMethod.CARD
+                        PaymentMethod.CARD,
+                        null
                 );
 
         EmptyCartException exception =
@@ -533,7 +739,8 @@ class CheckoutServiceTest {
                 orderRepository,
                 orderItemRepository,
                 productCacheService,
-                applicationEventPublisher
+                applicationEventPublisher,
+                promotionEngine
         );
     }
 
@@ -634,7 +841,9 @@ class CheckoutServiceTest {
 
         when(
                 userRepository
-                        .findById(USER_ID)
+                        .findById(
+                                USER_ID
+                        )
         ).thenReturn(
                 Optional.of(user)
         );
@@ -664,7 +873,9 @@ class CheckoutServiceTest {
                                 CART_ID
                         )
         ).thenReturn(
-                List.of(cartItem)
+                List.of(
+                        cartItem
+                )
         );
 
         return new TestData(
@@ -677,11 +888,15 @@ class CheckoutServiceTest {
 
         when(
                 orderRepository.save(
-                        any(CustomerOrder.class)
+                        any(
+                                CustomerOrder.class
+                        )
                 )
         ).thenAnswer(
                 invocation ->
-                        invocation.getArgument(0)
+                        invocation.getArgument(
+                                0
+                        )
         );
 
         when(
@@ -690,7 +905,9 @@ class CheckoutServiceTest {
                 )
         ).thenAnswer(
                 invocation ->
-                        invocation.getArgument(0)
+                        invocation.getArgument(
+                                0
+                        )
         );
     }
 

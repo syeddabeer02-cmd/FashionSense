@@ -12,6 +12,7 @@ import com.fashionsense.customer.UserRepository;
 import com.fashionsense.customer.address.Address;
 import com.fashionsense.customer.address.AddressNotFoundException;
 import com.fashionsense.customer.address.AddressRepository;
+import com.fashionsense.promotion.PromotionEngine;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,12 @@ public class CheckoutService {
     private static final BigDecimal TAX_RATE =
             new BigDecimal("0.0825");
 
+    private static final BigDecimal ZERO =
+            BigDecimal.ZERO.setScale(
+                    2,
+                    RoundingMode.HALF_UP
+            );
+
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
@@ -48,6 +55,7 @@ public class CheckoutService {
     private final OrderItemRepository orderItemRepository;
     private final ProductCacheService productCacheService;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final PromotionEngine promotionEngine;
 
     public CheckoutService(
             CartRepository cartRepository,
@@ -57,16 +65,36 @@ public class CheckoutService {
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             ProductCacheService productCacheService,
-            ApplicationEventPublisher applicationEventPublisher
+            ApplicationEventPublisher applicationEventPublisher,
+            PromotionEngine promotionEngine
     ) {
-        this.cartRepository = cartRepository;
-        this.cartItemRepository = cartItemRepository;
-        this.userRepository = userRepository;
-        this.addressRepository = addressRepository;
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.productCacheService = productCacheService;
-        this.applicationEventPublisher = applicationEventPublisher;
+
+        this.cartRepository =
+                cartRepository;
+
+        this.cartItemRepository =
+                cartItemRepository;
+
+        this.userRepository =
+                userRepository;
+
+        this.addressRepository =
+                addressRepository;
+
+        this.orderRepository =
+                orderRepository;
+
+        this.orderItemRepository =
+                orderItemRepository;
+
+        this.productCacheService =
+                productCacheService;
+
+        this.applicationEventPublisher =
+                applicationEventPublisher;
+
+        this.promotionEngine =
+                promotionEngine;
     }
 
     @Transactional
@@ -117,7 +145,10 @@ public class CheckoutService {
         }
 
         BigDecimal subtotal =
-                BigDecimal.ZERO;
+                ZERO;
+
+        BigDecimal productDiscountAmount =
+                ZERO;
 
         for (CartItem cartItem : cartItems) {
 
@@ -141,35 +172,126 @@ public class CheckoutService {
             }
 
             BigDecimal unitPrice =
-                    getEffectivePrice(variant);
+                    getEffectivePrice(
+                            variant
+                    );
 
             BigDecimal lineTotal =
-                    unitPrice.multiply(
-                            BigDecimal.valueOf(
-                                    cartItem.getQuantity()
+                    money(
+                            unitPrice.multiply(
+                                    BigDecimal.valueOf(
+                                            cartItem.getQuantity()
+                                    )
                             )
                     );
 
             subtotal =
-                    subtotal.add(lineTotal);
+                    subtotal.add(
+                            lineTotal
+                    );
+
+            BigDecimal lineDiscount =
+                    promotionEngine
+                            .calculateBestProductDiscount(
+                                    variant
+                                            .getProduct()
+                                            .getId(),
+                                    unitPrice,
+                                    cartItem.getQuantity()
+                            );
+
+            if (lineDiscount.compareTo(
+                    lineTotal
+            ) > 0) {
+
+                lineDiscount =
+                        lineTotal;
+            }
+
+            productDiscountAmount =
+                    productDiscountAmount.add(
+                            lineDiscount
+                    );
         }
 
         subtotal =
-                subtotal.setScale(
-                        2,
-                        RoundingMode.HALF_UP
+                money(subtotal);
+
+        productDiscountAmount =
+                money(
+                        productDiscountAmount
                 );
+
+        if (productDiscountAmount
+                .compareTo(subtotal) > 0) {
+
+            productDiscountAmount =
+                    subtotal;
+        }
+
+        BigDecimal subtotalAfterProductDiscounts =
+                money(
+                        subtotal.subtract(
+                                productDiscountAmount
+                        )
+                );
+
+        if (subtotalAfterProductDiscounts
+                .signum() < 0) {
+
+            subtotalAfterProductDiscounts =
+                    ZERO;
+        }
+
+        BigDecimal cartDiscountAmount =
+                promotionEngine
+                        .calculateCartDiscount(
+                                request.promotionCode(),
+                                subtotalAfterProductDiscounts
+                        );
+
+        cartDiscountAmount =
+                money(
+                        cartDiscountAmount
+                );
+
+        if (cartDiscountAmount.compareTo(
+                subtotalAfterProductDiscounts
+        ) > 0) {
+
+            cartDiscountAmount =
+                    subtotalAfterProductDiscounts;
+        }
 
         BigDecimal discountAmount =
-                BigDecimal.ZERO.setScale(2);
+                money(
+                        productDiscountAmount.add(
+                                cartDiscountAmount
+                        )
+                );
+
+        if (discountAmount.compareTo(
+                subtotal
+        ) > 0) {
+
+            discountAmount =
+                    subtotal;
+        }
 
         BigDecimal giftCardAmount =
-                BigDecimal.ZERO.setScale(2);
+                ZERO;
 
         BigDecimal taxableSubtotal =
-                subtotal.subtract(
-                        discountAmount
+                money(
+                        subtotal.subtract(
+                                discountAmount
+                        )
                 );
+
+        if (taxableSubtotal.signum() < 0) {
+            taxableSubtotal =
+                    ZERO;
+        }
 
         BigDecimal shippingAmount =
                 calculateShipping(
@@ -224,7 +346,9 @@ public class CheckoutService {
                 PaymentStatus.PENDING
         );
 
-        order.setSubtotal(subtotal);
+        order.setSubtotal(
+                subtotal
+        );
 
         order.setDiscountAmount(
                 discountAmount
@@ -252,7 +376,9 @@ public class CheckoutService {
         );
 
         CustomerOrder savedOrder =
-                orderRepository.save(order);
+                orderRepository.save(
+                        order
+                );
 
         List<OrderItem> orderItems =
                 new ArrayList<>();
@@ -266,18 +392,18 @@ public class CheckoutService {
                     cartItem.getVariant();
 
             BigDecimal unitPrice =
-                    getEffectivePrice(variant);
+                    getEffectivePrice(
+                            variant
+                    );
 
             BigDecimal lineTotal =
-                    unitPrice.multiply(
+                    money(
+                            unitPrice.multiply(
                                     BigDecimal.valueOf(
                                             cartItem.getQuantity()
                                     )
                             )
-                            .setScale(
-                                    2,
-                                    RoundingMode.HALF_UP
-                            );
+                    );
 
             OrderItem orderItem =
                     new OrderItem();
@@ -295,7 +421,9 @@ public class CheckoutService {
             );
 
             orderItem.setProductName(
-                    variant.getProduct().getName()
+                    variant
+                            .getProduct()
+                            .getName()
             );
 
             orderItem.setSize(
@@ -326,7 +454,9 @@ public class CheckoutService {
                     lineTotal
             );
 
-            orderItems.add(orderItem);
+            orderItems.add(
+                    orderItem
+            );
 
             variant.setStockQuantity(
                     variant.getStockQuantity()
@@ -334,13 +464,17 @@ public class CheckoutService {
             );
 
             affectedProductSlugs.add(
-                    variant.getProduct().getSlug()
+                    variant
+                            .getProduct()
+                            .getSlug()
             );
         }
 
         List<OrderItem> savedItems =
                 orderItemRepository
-                        .saveAll(orderItems);
+                        .saveAll(
+                                orderItems
+                        );
 
         /*
          * V1 payment simulation:
@@ -357,7 +491,9 @@ public class CheckoutService {
                 OrderStatus.CONFIRMED
         );
 
-        orderRepository.save(savedOrder);
+        orderRepository.save(
+                savedOrder
+        );
 
         cartItemRepository.deleteAll(
                 cartItems
@@ -374,16 +510,23 @@ public class CheckoutService {
                     );
         }
 
-        applicationEventPublisher.publishEvent(
-                new OrderConfirmedEvent(
-                        savedOrder.getOrderNumber(),
-                        userId,
-                        savedOrder.getTotalAmount(),
-                        savedOrder.getShippingMethod().name(),
-                        savedOrder.getPaymentMethod().name(),
-                        Instant.now()
-                )
-        );
+        applicationEventPublisher
+                .publishEvent(
+                        new OrderConfirmedEvent(
+                                savedOrder
+                                        .getOrderNumber(),
+                                userId,
+                                savedOrder
+                                        .getTotalAmount(),
+                                savedOrder
+                                        .getShippingMethod()
+                                        .name(),
+                                savedOrder
+                                        .getPaymentMethod()
+                                        .name(),
+                                Instant.now()
+                        )
+                );
 
         return OrderResponse.from(
                 savedOrder,
@@ -407,8 +550,7 @@ public class CheckoutService {
                         FREE_STANDARD_THRESHOLD
                 ) >= 0) {
 
-            return BigDecimal.ZERO
-                    .setScale(2);
+            return ZERO;
         }
 
         return STANDARD_SHIPPING;
@@ -421,10 +563,20 @@ public class CheckoutService {
         BigDecimal price =
                 variant.getPrice() != null
                         ? variant.getPrice()
-                        : variant.getProduct()
+                        : variant
+                                .getProduct()
                                 .getBasePrice();
 
-        return price.setScale(
+        return money(
+                price
+        );
+    }
+
+    private BigDecimal money(
+            BigDecimal amount
+    ) {
+
+        return amount.setScale(
                 2,
                 RoundingMode.HALF_UP
         );

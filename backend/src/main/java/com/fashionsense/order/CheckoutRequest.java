@@ -11,7 +11,9 @@ public record CheckoutRequest(
         ShippingMethod shippingMethod,
 
         @NotNull
-        PaymentMethod paymentMethod
+        PaymentMethod paymentMethod,
+
+        String promotionCode
 
 ) {
 }
