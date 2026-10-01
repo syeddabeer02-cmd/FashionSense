@@ -1,5 +1,6 @@
 package com.fashionsense.common;
 
+import com.fashionsense.auth.EmailAlreadyRegisteredException;
 import com.fashionsense.catalog.brand.BrandAlreadyExistsException;
 import com.fashionsense.catalog.brand.BrandNotFoundException;
 import com.fashionsense.catalog.category.CategoryAlreadyExistsException;
@@ -33,13 +34,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleNotFound(
             RuntimeException ex
     ) {
+
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(errorBody(
-                        404,
-                        "Not Found",
-                        ex.getMessage()
-                ));
+                .body(
+                        errorBody(
+                                404,
+                                "Not Found",
+                                ex.getMessage()
+                        )
+                );
     }
 
     @ExceptionHandler({
@@ -47,18 +51,22 @@ public class GlobalExceptionHandler {
             CategoryAlreadyExistsException.class,
             ProductAlreadyExistsException.class,
             ProductVariantAlreadyExistsException.class,
-            ProductPrimaryImageAlreadyExistsException.class
+            ProductPrimaryImageAlreadyExistsException.class,
+            EmailAlreadyRegisteredException.class
     })
     public ResponseEntity<Map<String, Object>> handleConflict(
             RuntimeException ex
     ) {
+
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(errorBody(
-                        409,
-                        "Conflict",
-                        ex.getMessage()
-                ));
+                .body(
+                        errorBody(
+                                409,
+                                "Conflict",
+                                ex.getMessage()
+                        )
+                );
     }
 
     private Map<String, Object> errorBody(
@@ -66,6 +74,7 @@ public class GlobalExceptionHandler {
             String error,
             String message
     ) {
+
         return Map.of(
                 "timestamp", LocalDateTime.now(),
                 "status", status,
