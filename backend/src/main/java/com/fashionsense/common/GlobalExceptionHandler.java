@@ -1,6 +1,10 @@
 package com.fashionsense.common;
 
+import com.fashionsense.auth.AccountNotActiveException;
 import com.fashionsense.auth.EmailAlreadyRegisteredException;
+import com.fashionsense.auth.EmailAlreadyVerifiedException;
+import com.fashionsense.auth.InvalidCredentialsException;
+import com.fashionsense.auth.InvalidVerificationTokenException;
 import com.fashionsense.catalog.brand.BrandAlreadyExistsException;
 import com.fashionsense.catalog.brand.BrandNotFoundException;
 import com.fashionsense.catalog.category.CategoryAlreadyExistsException;
@@ -12,6 +16,7 @@ import com.fashionsense.catalog.product.ProductAlreadyExistsException;
 import com.fashionsense.catalog.product.ProductNotFoundException;
 import com.fashionsense.catalog.variant.ProductVariantAlreadyExistsException;
 import com.fashionsense.catalog.variant.ProductVariantNotFoundException;
+import com.fashionsense.customer.address.AddressNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,7 +34,8 @@ public class GlobalExceptionHandler {
             ProductNotFoundException.class,
             ProductVariantNotFoundException.class,
             ProductImageNotFoundException.class,
-            OccasionNotFoundException.class
+            OccasionNotFoundException.class,
+            AddressNotFoundException.class
     })
     public ResponseEntity<Map<String, Object>> handleNotFound(
             RuntimeException ex
@@ -52,7 +58,8 @@ public class GlobalExceptionHandler {
             ProductAlreadyExistsException.class,
             ProductVariantAlreadyExistsException.class,
             ProductPrimaryImageAlreadyExistsException.class,
-            EmailAlreadyRegisteredException.class
+            EmailAlreadyRegisteredException.class,
+            EmailAlreadyVerifiedException.class
     })
     public ResponseEntity<Map<String, Object>> handleConflict(
             RuntimeException ex
@@ -64,6 +71,60 @@ public class GlobalExceptionHandler {
                         errorBody(
                                 409,
                                 "Conflict",
+                                ex.getMessage()
+                        )
+                );
+    }
+
+    @ExceptionHandler(
+            InvalidCredentialsException.class
+    )
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(
+            InvalidCredentialsException ex
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(
+                        errorBody(
+                                401,
+                                "Unauthorized",
+                                ex.getMessage()
+                        )
+                );
+    }
+
+    @ExceptionHandler(
+            AccountNotActiveException.class
+    )
+    public ResponseEntity<Map<String, Object>> handleForbidden(
+            AccountNotActiveException ex
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(
+                        errorBody(
+                                403,
+                                "Forbidden",
+                                ex.getMessage()
+                        )
+                );
+    }
+
+    @ExceptionHandler(
+            InvalidVerificationTokenException.class
+    )
+    public ResponseEntity<Map<String, Object>> handleBadRequest(
+            InvalidVerificationTokenException ex
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(
+                        errorBody(
+                                400,
+                                "Bad Request",
                                 ex.getMessage()
                         )
                 );
