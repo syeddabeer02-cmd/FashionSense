@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { apiGet } from "@/lib/api";
 import type { ProductPage } from "@/types/product";
 
@@ -33,16 +35,19 @@ export default async function Home() {
 
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center gap-8 px-6 py-5">
-          <div className="text-2xl font-bold tracking-tight">
+          <Link
+            href="/"
+            className="text-2xl font-bold tracking-tight"
+          >
             Fashion
             <span className="text-pink-600">Sense</span>
-          </div>
+          </Link>
 
           <nav className="hidden gap-6 font-medium lg:flex">
             {categories.map((category) => (
               <a
                 key={category}
-                href="#"
+                href="#departments"
                 className="transition hover:text-pink-600"
               >
                 {category}
@@ -61,17 +66,26 @@ export default async function Home() {
           </div>
 
           <div className="flex items-center gap-5 text-sm font-medium">
-            <a href="#" className="hover:text-pink-600">
+            <Link
+              href="/profile"
+              className="transition hover:text-pink-600"
+            >
               Profile
-            </a>
+            </Link>
 
-            <a href="#" className="hover:text-pink-600">
+            <Link
+              href="/wishlist"
+              className="transition hover:text-pink-600"
+            >
               Wishlist
-            </a>
+            </Link>
 
-            <a href="#" className="hover:text-pink-600">
+            <Link
+              href="/cart"
+              className="transition hover:text-pink-600"
+            >
               Cart
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -93,13 +107,19 @@ export default async function Home() {
             </p>
 
             <div className="mt-8 flex gap-4">
-              <button className="rounded-md bg-gray-950 px-6 py-3 font-semibold text-white transition hover:bg-pink-600">
+              <a
+                href="#featured-products"
+                className="rounded-md bg-gray-950 px-6 py-3 font-semibold text-white transition hover:bg-pink-600"
+              >
                 Shop Now
-              </button>
+              </a>
 
-              <button className="rounded-md border border-gray-300 bg-white px-6 py-3 font-semibold transition hover:border-gray-950">
+              <a
+                href="#departments"
+                className="rounded-md border border-gray-300 bg-white px-6 py-3 font-semibold transition hover:border-gray-950"
+              >
                 Explore Collections
-              </button>
+              </a>
             </div>
           </div>
 
@@ -117,7 +137,10 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section
+        id="departments"
+        className="mx-auto max-w-7xl scroll-mt-8 px-6 py-16"
+      >
         <div className="mb-8 flex items-end justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-pink-600">
@@ -134,7 +157,7 @@ export default async function Home() {
           {categories.map((category, index) => (
             <a
               key={category}
-              href="#"
+              href="#featured-products"
               className={`flex min-h-56 items-end rounded-2xl p-6 text-2xl font-bold transition hover:-translate-y-1 ${
                 index === 0
                   ? "bg-slate-200"
@@ -151,7 +174,10 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="bg-gray-50">
+      <section
+        id="occasions"
+        className="scroll-mt-8 bg-gray-50"
+      >
         <div className="mx-auto max-w-7xl px-6 py-16">
           <p className="text-sm font-semibold uppercase tracking-widest text-pink-600">
             Curated for you
@@ -163,18 +189,22 @@ export default async function Home() {
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             {occasions.map((occasion) => (
-              <button
+              <a
                 key={occasion}
-                className="rounded-xl border border-gray-200 bg-white px-5 py-8 font-semibold shadow-sm transition hover:border-pink-400 hover:text-pink-600"
+                href="#featured-products"
+                className="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center font-semibold shadow-sm transition hover:border-pink-400 hover:text-pink-600"
               >
                 {occasion}
-              </button>
+              </a>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section
+        id="featured-products"
+        className="mx-auto max-w-7xl scroll-mt-8 px-6 py-16"
+      >
         <p className="text-sm font-semibold uppercase tracking-widest text-pink-600">
           Trending
         </p>
@@ -217,12 +247,12 @@ export default async function Home() {
                     ${Number(product.basePrice).toFixed(2)}
                   </p>
 
-                  <a
+                  <Link
                     href={`/products/${product.slug}`}
                     className="mt-5 inline-block rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-600"
                   >
                     View product
-                  </a>
+                  </Link>
                 </div>
               </article>
             ))}
