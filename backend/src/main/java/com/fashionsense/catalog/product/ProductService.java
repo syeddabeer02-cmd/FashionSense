@@ -13,6 +13,8 @@ import com.fashionsense.catalog.occasion.OccasionNotFoundException;
 import com.fashionsense.catalog.occasion.OccasionRepository;
 import com.fashionsense.catalog.variant.ProductVariantRepository;
 import com.fashionsense.catalog.variant.ProductVariantResponse;
+import com.fashionsense.config.ProductCacheService;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class ProductService {
     private final OccasionRepository occasionRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductImageRepository productImageRepository;
+    private final ProductCacheService productCacheService;
 
     public ProductService(
             ProductRepository productRepository,
@@ -37,7 +40,8 @@ public class ProductService {
             CategoryRepository categoryRepository,
             OccasionRepository occasionRepository,
             ProductVariantRepository productVariantRepository,
-            ProductImageRepository productImageRepository
+            ProductImageRepository productImageRepository,
+            ProductCacheService productCacheService
     ) {
         this.productRepository = productRepository;
         this.brandRepository = brandRepository;
@@ -45,6 +49,7 @@ public class ProductService {
         this.occasionRepository = occasionRepository;
         this.productVariantRepository = productVariantRepository;
         this.productImageRepository = productImageRepository;
+        this.productCacheService = productCacheService;
     }
 
     @Transactional(readOnly = true)
@@ -52,6 +57,7 @@ public class ProductService {
             ProductSearchCriteria criteria,
             Pageable pageable
     ) {
+
         return productRepository
                 .findAll(
                         ProductSpecifications.matches(criteria),
@@ -66,7 +72,10 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Product getProductBySlug(String slug) {
+    public Product getProductBySlug(
+            String slug
+    ) {
+
         return productRepository.findBySlugWithDetails(slug)
                 .orElseThrow(() ->
                         new ProductNotFoundException(
@@ -75,26 +84,38 @@ public class ProductService {
                 );
     }
 
+    @Cacheable(
+            cacheNames = "productDetails",
+            key = "#slug"
+    )
     @Transactional(readOnly = true)
-    public ProductDetailResponse getProductDetail(String slug) {
+    public ProductDetailResponse getProductDetail(
+            String slug
+    ) {
 
-        Product product = productRepository.findBySlugWithDetails(slug)
-                .orElseThrow(() ->
-                        new ProductNotFoundException(
-                                "Product not found with slug: " + slug
-                        )
-                );
+        Product product =
+                productRepository.findBySlugWithDetails(slug)
+                        .orElseThrow(() ->
+                                new ProductNotFoundException(
+                                        "Product not found with slug: "
+                                                + slug
+                                )
+                        );
 
         List<ProductVariantResponse> variants =
                 productVariantRepository
-                        .findByProductIdWithProduct(product.getId())
+                        .findByProductIdWithProduct(
+                                product.getId()
+                        )
                         .stream()
                         .map(ProductVariantResponse::from)
                         .toList();
 
         List<ProductImageResponse> images =
                 productImageRepository
-                        .findByProductIdWithProduct(product.getId())
+                        .findByProductIdWithProduct(
+                                product.getId()
+                        )
                         .stream()
                         .map(ProductImageResponse::from)
                         .toList();
@@ -107,15 +128,22 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<Product> getProductsByOccasion(String occasionSlug) {
+    public List<Product> getProductsByOccasion(
+            String occasionSlug
+    ) {
 
-        if (occasionRepository.findBySlug(occasionSlug).isEmpty()) {
+        if (occasionRepository
+                .findBySlug(occasionSlug)
+                .isEmpty()) {
+
             throw new OccasionNotFoundException(
-                    "Occasion not found with slug: " + occasionSlug
+                    "Occasion not found with slug: "
+                            + occasionSlug
             );
         }
 
-        return productRepository.findByOccasionSlug(occasionSlug);
+        return productRepository
+                .findByOccasionSlug(occasionSlug);
     }
 
     @Transactional
@@ -124,24 +152,37 @@ public class ProductService {
             String occasionSlug
     ) {
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() ->
-                        new ProductNotFoundException(
-                                "Product not found with id: " + productId
-                        )
-                );
+        Product product =
+                productRepository.findById(productId)
+                        .orElseThrow(() ->
+                                new ProductNotFoundException(
+                                        "Product not found with id: "
+                                                + productId
+                                )
+                        );
 
-        Occasion occasion = occasionRepository.findBySlug(occasionSlug)
-                .orElseThrow(() ->
-                        new OccasionNotFoundException(
-                                "Occasion not found with slug: " + occasionSlug
-                        )
-                );
+        Occasion occasion =
+                occasionRepository
+                        .findBySlug(occasionSlug)
+                        .orElseThrow(() ->
+                                new OccasionNotFoundException(
+                                        "Occasion not found with slug: "
+                                                + occasionSlug
+                                )
+                        );
 
         product.addOccasion(occasion);
         productRepository.save(product);
 
-        return productRepository.findBySlugWithDetails(product.getSlug())
+        productCacheService
+                .evictProductDetailAfterCommit(
+                        product.getSlug()
+                );
+
+        return productRepository
+                .findBySlugWithDetails(
+                        product.getSlug()
+                )
                 .orElseThrow(() ->
                         new ProductNotFoundException(
                                 "Product not found with slug: "
@@ -166,21 +207,26 @@ public class ProductService {
             );
         }
 
-        Brand brand = brandRepository.findById(brandId)
-                .orElseThrow(() ->
-                        new BrandNotFoundException(
-                                "Brand not found with id: " + brandId
-                        )
-                );
+        Brand brand =
+                brandRepository.findById(brandId)
+                        .orElseThrow(() ->
+                                new BrandNotFoundException(
+                                        "Brand not found with id: "
+                                                + brandId
+                                )
+                        );
 
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() ->
-                        new CategoryNotFoundException(
-                                "Category not found with id: " + categoryId
-                        )
-                );
+        Category category =
+                categoryRepository.findById(categoryId)
+                        .orElseThrow(() ->
+                                new CategoryNotFoundException(
+                                        "Category not found with id: "
+                                                + categoryId
+                                )
+                        );
 
-        Product product = new Product();
+        Product product =
+                new Product();
 
         product.setBrand(brand);
         product.setCategory(category);

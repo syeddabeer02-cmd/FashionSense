@@ -3,6 +3,7 @@ package com.fashionsense.catalog.variant;
 import com.fashionsense.catalog.product.Product;
 import com.fashionsense.catalog.product.ProductNotFoundException;
 import com.fashionsense.catalog.product.ProductRepository;
+import com.fashionsense.config.ProductCacheService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,17 +15,22 @@ public class ProductVariantService {
 
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
+    private final ProductCacheService productCacheService;
 
     public ProductVariantService(
             ProductVariantRepository productVariantRepository,
-            ProductRepository productRepository
+            ProductRepository productRepository,
+            ProductCacheService productCacheService
     ) {
         this.productVariantRepository = productVariantRepository;
         this.productRepository = productRepository;
+        this.productCacheService = productCacheService;
     }
 
     @Transactional(readOnly = true)
-    public List<ProductVariant> getVariantsByProductId(Long productId) {
+    public List<ProductVariant> getVariantsByProductId(
+            Long productId
+    ) {
 
         if (!productRepository.existsById(productId)) {
             throw new ProductNotFoundException(
@@ -32,11 +38,15 @@ public class ProductVariantService {
             );
         }
 
-        return productVariantRepository.findByProductIdWithProduct(productId);
+        return productVariantRepository
+                .findByProductIdWithProduct(productId);
     }
 
     @Transactional(readOnly = true)
-    public ProductVariant getVariantBySku(String sku) {
+    public ProductVariant getVariantBySku(
+            String sku
+    ) {
+
         return productVariantRepository.findBySku(sku)
                 .orElseThrow(() ->
                         new ProductVariantNotFoundException(
@@ -69,20 +79,25 @@ public class ProductVariantService {
             );
         }
 
-        if (price != null && price.compareTo(BigDecimal.ZERO) < 0) {
+        if (price != null
+                && price.compareTo(BigDecimal.ZERO) < 0) {
+
             throw new IllegalArgumentException(
                     "Variant price cannot be negative"
             );
         }
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() ->
-                        new ProductNotFoundException(
-                                "Product not found with id: " + productId
-                        )
-                );
+        Product product =
+                productRepository.findById(productId)
+                        .orElseThrow(() ->
+                                new ProductNotFoundException(
+                                        "Product not found with id: "
+                                                + productId
+                                )
+                        );
 
-        ProductVariant variant = new ProductVariant();
+        ProductVariant variant =
+                new ProductVariant();
 
         variant.setProduct(product);
         variant.setSku(sku);
@@ -94,6 +109,14 @@ public class ProductVariantService {
         variant.setStockQuantity(stockQuantity);
         variant.setActive(true);
 
-        return productVariantRepository.save(variant);
+        ProductVariant savedVariant =
+                productVariantRepository.save(variant);
+
+        productCacheService
+                .evictProductDetailAfterCommit(
+                        product.getSlug()
+                );
+
+        return savedVariant;
     }
 }

@@ -6,6 +6,7 @@ import com.fashionsense.cart.CartItemRepository;
 import com.fashionsense.cart.CartItemUnavailableException;
 import com.fashionsense.cart.CartRepository;
 import com.fashionsense.catalog.variant.ProductVariant;
+import com.fashionsense.config.ProductCacheService;
 import com.fashionsense.customer.User;
 import com.fashionsense.customer.UserRepository;
 import com.fashionsense.customer.address.Address;
@@ -17,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -41,6 +44,7 @@ public class CheckoutService {
     private final AddressRepository addressRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductCacheService productCacheService;
 
     public CheckoutService(
             CartRepository cartRepository,
@@ -48,7 +52,8 @@ public class CheckoutService {
             UserRepository userRepository,
             AddressRepository addressRepository,
             OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository
+            OrderItemRepository orderItemRepository,
+            ProductCacheService productCacheService
     ) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -56,6 +61,7 @@ public class CheckoutService {
         this.addressRepository = addressRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
+        this.productCacheService = productCacheService;
     }
 
     @Transactional
@@ -214,18 +220,23 @@ public class CheckoutService {
         );
 
         order.setSubtotal(subtotal);
+
         order.setDiscountAmount(
                 discountAmount
         );
+
         order.setGiftCardAmount(
                 giftCardAmount
         );
+
         order.setShippingAmount(
                 shippingAmount
         );
+
         order.setTaxAmount(
                 taxAmount
         );
+
         order.setTotalAmount(
                 totalAmount
         );
@@ -240,6 +251,9 @@ public class CheckoutService {
 
         List<OrderItem> orderItems =
                 new ArrayList<>();
+
+        Set<String> affectedProductSlugs =
+                new HashSet<>();
 
         for (CartItem cartItem : cartItems) {
 
@@ -313,6 +327,10 @@ public class CheckoutService {
                     variant.getStockQuantity()
                             - cartItem.getQuantity()
             );
+
+            affectedProductSlugs.add(
+                    variant.getProduct().getSlug()
+            );
         }
 
         List<OrderItem> savedItems =
@@ -341,6 +359,15 @@ public class CheckoutService {
         );
 
         cartItemRepository.flush();
+
+        for (String productSlug
+                : affectedProductSlugs) {
+
+            productCacheService
+                    .evictProductDetailAfterCommit(
+                            productSlug
+                    );
+        }
 
         return OrderResponse.from(
                 savedOrder,

@@ -7,6 +7,7 @@ import com.fashionsense.cart.CartItemUnavailableException;
 import com.fashionsense.cart.CartRepository;
 import com.fashionsense.catalog.product.Product;
 import com.fashionsense.catalog.variant.ProductVariant;
+import com.fashionsense.config.ProductCacheService;
 import com.fashionsense.customer.User;
 import com.fashionsense.customer.UserRepository;
 import com.fashionsense.customer.address.Address;
@@ -57,17 +58,22 @@ class CheckoutServiceTest {
     @Mock
     private OrderItemRepository orderItemRepository;
 
+    @Mock
+    private ProductCacheService productCacheService;
+
     private CheckoutService checkoutService;
 
     @BeforeEach
     void setUp() {
+
         checkoutService = new CheckoutService(
                 cartRepository,
                 cartItemRepository,
                 userRepository,
                 addressRepository,
                 orderRepository,
-                orderItemRepository
+                orderItemRepository,
+                productCacheService
         );
     }
 
@@ -82,14 +88,18 @@ class CheckoutServiceTest {
 
         stubSuccessfulPersistence();
 
-        CheckoutRequest request = new CheckoutRequest(
-                ADDRESS_ID,
-                ShippingMethod.STANDARD,
-                PaymentMethod.CARD
-        );
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD
+                );
 
         OrderResponse response =
-                checkoutService.checkout(USER_ID, request);
+                checkoutService.checkout(
+                        USER_ID,
+                        request
+                );
 
         assertEquals(
                 new BigDecimal("79.99"),
@@ -132,12 +142,14 @@ class CheckoutServiceTest {
         );
 
         assertTrue(
-                response.orderNumber().startsWith("FS-")
+                response.orderNumber()
+                        .startsWith("FS-")
         );
 
         assertEquals(
                 9,
-                testData.variant().getStockQuantity()
+                testData.variant()
+                        .getStockQuantity()
         );
 
         assertEquals(
@@ -147,31 +159,49 @@ class CheckoutServiceTest {
 
         assertEquals(
                 "TEST-SKU-001",
-                response.items().getFirst().sku()
+                response.items()
+                        .getFirst()
+                        .sku()
         );
 
         assertEquals(
                 "Test Hoodie",
-                response.items().getFirst().productName()
+                response.items()
+                        .getFirst()
+                        .productName()
         );
 
         assertEquals(
                 new BigDecimal("79.99"),
-                response.items().getFirst().unitPrice()
+                response.items()
+                        .getFirst()
+                        .unitPrice()
         );
 
         verify(cartItemRepository)
                 .deleteAll(
-                        List.of(testData.cartItem())
+                        List.of(
+                                testData.cartItem()
+                        )
                 );
 
-        verify(cartItemRepository).flush();
+        verify(cartItemRepository)
+                .flush();
 
         verify(orderRepository, times(2))
-                .save(any(CustomerOrder.class));
+                .save(
+                        any(CustomerOrder.class)
+                );
 
         verify(orderItemRepository)
-                .saveAll(anyList());
+                .saveAll(
+                        anyList()
+                );
+
+        verify(productCacheService)
+                .evictProductDetailAfterCommit(
+                        "test-hoodie"
+                );
     }
 
     @Test
@@ -185,14 +215,18 @@ class CheckoutServiceTest {
 
         stubSuccessfulPersistence();
 
-        CheckoutRequest request = new CheckoutRequest(
-                ADDRESS_ID,
-                ShippingMethod.EXPRESS,
-                PaymentMethod.PAYPAL
-        );
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.EXPRESS,
+                        PaymentMethod.PAYPAL
+                );
 
         OrderResponse response =
-                checkoutService.checkout(USER_ID, request);
+                checkoutService.checkout(
+                        USER_ID,
+                        request
+                );
 
         assertEquals(
                 new BigDecimal("79.99"),
@@ -233,6 +267,11 @@ class CheckoutServiceTest {
                 "SUCCEEDED",
                 response.paymentStatus()
         );
+
+        verify(productCacheService)
+                .evictProductDetailAfterCommit(
+                        "test-hoodie"
+                );
     }
 
     @Test
@@ -246,14 +285,18 @@ class CheckoutServiceTest {
 
         stubSuccessfulPersistence();
 
-        CheckoutRequest request = new CheckoutRequest(
-                ADDRESS_ID,
-                ShippingMethod.STANDARD,
-                PaymentMethod.CARD
-        );
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD
+                );
 
         OrderResponse response =
-                checkoutService.checkout(USER_ID, request);
+                checkoutService.checkout(
+                        USER_ID,
+                        request
+                );
 
         assertEquals(
                 new BigDecimal("50.00"),
@@ -274,6 +317,11 @@ class CheckoutServiceTest {
                 new BigDecimal("60.12"),
                 response.totalAmount()
         );
+
+        verify(productCacheService)
+                .evictProductDetailAfterCommit(
+                        "test-hoodie"
+                );
     }
 
     @Test
@@ -285,19 +333,21 @@ class CheckoutServiceTest {
                 2
         );
 
-        CheckoutRequest request = new CheckoutRequest(
-                ADDRESS_ID,
-                ShippingMethod.STANDARD,
-                PaymentMethod.CARD
-        );
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD
+                );
 
         CartItemUnavailableException exception =
                 assertThrows(
                         CartItemUnavailableException.class,
-                        () -> checkoutService.checkout(
-                                USER_ID,
-                                request
-                        )
+                        () ->
+                                checkoutService.checkout(
+                                        USER_ID,
+                                        request
+                                )
                 );
 
         assertEquals(
@@ -307,37 +357,44 @@ class CheckoutServiceTest {
 
         verifyNoInteractions(
                 orderRepository,
-                orderItemRepository
+                orderItemRepository,
+                productCacheService
         );
 
         verify(cartItemRepository, never())
-                .deleteAll(anyList());
+                .deleteAll(
+                        anyList()
+                );
     }
 
     @Test
     void checkoutRejectsInactiveVariant() {
 
-        TestData testData = prepareCheckout(
-                new BigDecimal("79.99"),
-                10,
-                1
-        );
+        TestData testData =
+                prepareCheckout(
+                        new BigDecimal("79.99"),
+                        10,
+                        1
+                );
 
-        testData.variant().setActive(false);
+        testData.variant()
+                .setActive(false);
 
-        CheckoutRequest request = new CheckoutRequest(
-                ADDRESS_ID,
-                ShippingMethod.STANDARD,
-                PaymentMethod.CARD
-        );
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD
+                );
 
         CartItemUnavailableException exception =
                 assertThrows(
                         CartItemUnavailableException.class,
-                        () -> checkoutService.checkout(
-                                USER_ID,
-                                request
-                        )
+                        () ->
+                                checkoutService.checkout(
+                                        USER_ID,
+                                        request
+                                )
                 );
 
         assertEquals(
@@ -347,58 +404,83 @@ class CheckoutServiceTest {
 
         verifyNoInteractions(
                 orderRepository,
-                orderItemRepository
+                orderItemRepository,
+                productCacheService
         );
 
         verify(cartItemRepository, never())
-                .deleteAll(anyList());
+                .deleteAll(
+                        anyList()
+                );
     }
 
     @Test
     void checkoutRejectsEmptyCart() {
 
-        User user = new User();
+        User user =
+                new User();
 
-        Address address = createAddress();
+        Address address =
+                createAddress();
 
         Cart cart =
-                org.mockito.Mockito.mock(Cart.class);
+                org.mockito.Mockito.mock(
+                        Cart.class
+                );
 
         when(cart.getId())
-                .thenReturn(CART_ID);
+                .thenReturn(
+                        CART_ID
+                );
 
         when(userRepository.findById(USER_ID))
-                .thenReturn(Optional.of(user));
+                .thenReturn(
+                        Optional.of(user)
+                );
 
         when(
-                addressRepository.findByIdAndUserId(
-                        ADDRESS_ID,
-                        USER_ID
-                )
-        ).thenReturn(Optional.of(address));
-
-        when(cartRepository.findByUserId(USER_ID))
-                .thenReturn(Optional.of(cart));
-
-        when(
-                cartItemRepository.findAllWithDetails(
-                        CART_ID
-                )
-        ).thenReturn(List.of());
-
-        CheckoutRequest request = new CheckoutRequest(
-                ADDRESS_ID,
-                ShippingMethod.STANDARD,
-                PaymentMethod.CARD
+                addressRepository
+                        .findByIdAndUserId(
+                                ADDRESS_ID,
+                                USER_ID
+                        )
+        ).thenReturn(
+                Optional.of(address)
         );
+
+        when(
+                cartRepository
+                        .findByUserId(
+                                USER_ID
+                        )
+        ).thenReturn(
+                Optional.of(cart)
+        );
+
+        when(
+                cartItemRepository
+                        .findAllWithDetails(
+                                CART_ID
+                        )
+        ).thenReturn(
+                List.of()
+        );
+
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD
+                );
 
         EmptyCartException exception =
                 assertThrows(
                         EmptyCartException.class,
-                        () -> checkoutService.checkout(
-                                USER_ID,
-                                request
-                        )
+                        () ->
+                                checkoutService.checkout(
+                                        USER_ID,
+                                        request
+                                )
                 );
 
         assertEquals(
@@ -408,7 +490,8 @@ class CheckoutServiceTest {
 
         verifyNoInteractions(
                 orderRepository,
-                orderItemRepository
+                orderItemRepository,
+                productCacheService
         );
     }
 
@@ -418,60 +501,126 @@ class CheckoutServiceTest {
             int cartQuantity
     ) {
 
-        User user = new User();
+        User user =
+                new User();
 
-        Address address = createAddress();
+        Address address =
+                createAddress();
 
         Cart cart =
-                org.mockito.Mockito.mock(Cart.class);
+                org.mockito.Mockito.mock(
+                        Cart.class
+                );
 
         when(cart.getId())
-                .thenReturn(CART_ID);
+                .thenReturn(
+                        CART_ID
+                );
 
-        Product product = new Product();
+        Product product =
+                new Product();
 
-        product.setName("Test Hoodie");
-        product.setSlug("test-hoodie");
-        product.setBasePrice(price);
-        product.setActive(true);
+        product.setName(
+                "Test Hoodie"
+        );
+
+        product.setSlug(
+                "test-hoodie"
+        );
+
+        product.setBasePrice(
+                price
+        );
+
+        product.setActive(
+                true
+        );
 
         ProductVariant variant =
                 new ProductVariant();
 
-        variant.setProduct(product);
-        variant.setSku("TEST-SKU-001");
-        variant.setSize("M");
-        variant.setColor("Black");
-        variant.setStyle("Casual");
-        variant.setMaterial("Cotton");
-        variant.setPrice(price);
-        variant.setStockQuantity(stockQuantity);
-        variant.setActive(true);
+        variant.setProduct(
+                product
+        );
+
+        variant.setSku(
+                "TEST-SKU-001"
+        );
+
+        variant.setSize(
+                "M"
+        );
+
+        variant.setColor(
+                "Black"
+        );
+
+        variant.setStyle(
+                "Casual"
+        );
+
+        variant.setMaterial(
+                "Cotton"
+        );
+
+        variant.setPrice(
+                price
+        );
+
+        variant.setStockQuantity(
+                stockQuantity
+        );
+
+        variant.setActive(
+                true
+        );
 
         CartItem cartItem =
                 new CartItem();
 
-        cartItem.setCart(cart);
-        cartItem.setVariant(variant);
-        cartItem.setQuantity(cartQuantity);
+        cartItem.setCart(
+                cart
+        );
 
-        when(userRepository.findById(USER_ID))
-                .thenReturn(Optional.of(user));
+        cartItem.setVariant(
+                variant
+        );
 
-        when(
-                addressRepository.findByIdAndUserId(
-                        ADDRESS_ID,
-                        USER_ID
-                )
-        ).thenReturn(Optional.of(address));
-
-        when(cartRepository.findByUserId(USER_ID))
-                .thenReturn(Optional.of(cart));
+        cartItem.setQuantity(
+                cartQuantity
+        );
 
         when(
-                cartItemRepository.findAllWithDetails(
-                        CART_ID
-                )
+                userRepository
+                        .findById(USER_ID)
+        ).thenReturn(
+                Optional.of(user)
+        );
+
+        when(
+                addressRepository
+                        .findByIdAndUserId(
+                                ADDRESS_ID,
+                                USER_ID
+                        )
+        ).thenReturn(
+                Optional.of(address)
+        );
+
+        when(
+                cartRepository
+                        .findByUserId(
+                                USER_ID
+                        )
+        ).thenReturn(
+                Optional.of(cart)
+        );
+
+        when(
+                cartItemRepository
+                        .findAllWithDetails(
+                                CART_ID
+                        )
         ).thenReturn(
                 List.of(cartItem)
         );
