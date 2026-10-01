@@ -2,6 +2,7 @@ package com.fashionsense.catalog.product;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ProductResponse(
         Long id,
@@ -19,11 +20,20 @@ public record ProductResponse(
         String categoryName,
         String categorySlug,
 
+        List<String> occasions,
+
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
 
     public static ProductResponse from(Product product) {
+
+        List<String> occasions = product.getOccasions()
+                .stream()
+                .map(occasion -> occasion.getSlug())
+                .sorted()
+                .toList();
+
         return new ProductResponse(
                 product.getId(),
                 product.getName(),
@@ -39,6 +49,8 @@ public record ProductResponse(
                 product.getCategory().getId(),
                 product.getCategory().getName(),
                 product.getCategory().getSlug(),
+
+                occasions,
 
                 product.getCreatedAt(),
                 product.getUpdatedAt()

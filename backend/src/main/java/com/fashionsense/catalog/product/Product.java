@@ -2,10 +2,13 @@ package com.fashionsense.catalog.product;
 
 import com.fashionsense.catalog.brand.Brand;
 import com.fashionsense.catalog.category.Category;
+import com.fashionsense.catalog.occasion.Occasion;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -22,6 +25,14 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_occasions",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "occasion_id")
+    )
+    private Set<Occasion> occasions = new HashSet<>();
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -77,6 +88,18 @@ public class Product {
 
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    public Set<Occasion> getOccasions() {
+        return occasions;
+    }
+
+    public void setOccasions(Set<Occasion> occasions) {
+        this.occasions = occasions;
+    }
+
+    public void addOccasion(Occasion occasion) {
+        this.occasions.add(occasion);
     }
 
     public String getName() {

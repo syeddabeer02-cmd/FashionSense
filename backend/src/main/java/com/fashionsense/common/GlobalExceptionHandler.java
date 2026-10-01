@@ -6,6 +6,7 @@ import com.fashionsense.catalog.category.CategoryAlreadyExistsException;
 import com.fashionsense.catalog.category.CategoryNotFoundException;
 import com.fashionsense.catalog.image.ProductImageNotFoundException;
 import com.fashionsense.catalog.image.ProductPrimaryImageAlreadyExistsException;
+import com.fashionsense.catalog.occasion.OccasionNotFoundException;
 import com.fashionsense.catalog.product.ProductAlreadyExistsException;
 import com.fashionsense.catalog.product.ProductNotFoundException;
 import com.fashionsense.catalog.variant.ProductVariantAlreadyExistsException;
@@ -26,7 +27,8 @@ public class GlobalExceptionHandler {
             CategoryNotFoundException.class,
             ProductNotFoundException.class,
             ProductVariantNotFoundException.class,
-            ProductImageNotFoundException.class
+            ProductImageNotFoundException.class,
+            OccasionNotFoundException.class
     })
     public ResponseEntity<Map<String, Object>> handleNotFound(
             RuntimeException ex
