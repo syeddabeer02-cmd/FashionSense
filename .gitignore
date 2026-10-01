@@ -1,0 +1,16 @@
+# Environment files / secrets
+.env
+**/.env
+
+# Frontend dependencies and builds
+node_modules/
+.next/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
