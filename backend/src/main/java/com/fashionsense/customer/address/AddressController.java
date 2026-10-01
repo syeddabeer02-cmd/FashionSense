@@ -1,5 +1,6 @@
 package com.fashionsense.customer.address;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/customers/me/addresses")
+@SecurityRequirement(name = "bearerAuth")
 public class AddressController {
 
     private final AddressService addressService;

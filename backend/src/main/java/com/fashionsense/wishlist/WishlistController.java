@@ -1,5 +1,6 @@
 package com.fashionsense.wishlist;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/customers/me/wishlist")
+@SecurityRequirement(name = "bearerAuth")
 public class WishlistController {
 
     private final WishlistService wishlistService;

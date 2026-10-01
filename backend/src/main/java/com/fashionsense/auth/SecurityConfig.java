@@ -111,11 +111,42 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        /*
+                         * Swagger / OpenAPI documentation.
+                         *
+                         * These routes are public so developers
+                         * can open the API documentation without
+                         * already having a JWT.
+                         *
+                         * Protected API operations themselves
+                         * remain protected by the rules below.
+                         */
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**"
+                        )
+                        .permitAll()
+
+                        /*
+                         * Authentication endpoints.
+                         *
+                         * Registration, login, email verification
+                         * and resend-verification must be reachable
+                         * before the user has a JWT.
+                         */
                         .requestMatchers(
                                 "/api/auth/**"
                         )
                         .permitAll()
 
+                        /*
+                         * Public catalog read operations.
+                         *
+                         * Customers should be able to browse the
+                         * catalog without being logged in.
+                         */
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/products/**",
@@ -127,6 +158,9 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
+                        /*
+                         * Catalog write operations are ADMIN only.
+                         */
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/products/**",
@@ -138,21 +172,42 @@ public class SecurityConfig {
                         )
                         .hasRole("ADMIN")
 
+                        /*
+                         * Image deletion is also ADMIN only.
+                         */
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/product-images/**"
                         )
                         .hasRole("ADMIN")
 
+                        /*
+                         * Customer-specific APIs require a
+                         * successfully authenticated JWT.
+                         *
+                         * This covers:
+                         * - customer profile
+                         * - addresses
+                         * - wishlist
+                         * - cart
+                         * - checkout
+                         * - orders
+                         */
                         .requestMatchers(
                                 "/api/customers/**"
                         )
                         .authenticated()
 
+                        /*
+                         * Secure everything else by default.
+                         */
                         .anyRequest()
                         .authenticated()
                 )
 
+                /*
+                 * Spring Security validates Bearer JWTs here.
+                 */
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt ->
                                 jwt.jwtAuthenticationConverter(
