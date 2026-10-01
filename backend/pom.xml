@@ -91,6 +91,12 @@
             <artifactId>spring-boot-starter-kafka</artifactId>
         </dependency>
 
+        <!-- Production health checks and observability -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Development -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

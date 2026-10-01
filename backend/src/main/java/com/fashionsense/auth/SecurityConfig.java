@@ -112,6 +112,25 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         /*
+                         * Public infrastructure health checks.
+                         *
+                         * These endpoints can be called by:
+                         * - Docker health checks
+                         * - load balancers
+                         * - Kubernetes probes
+                         * - deployment platforms
+                         *
+                         * Detailed health information remains hidden
+                         * through application.properties.
+                         */
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/health/liveness",
+                                "/actuator/health/readiness"
+                        )
+                        .permitAll()
+
+                        /*
                          * Swagger / OpenAPI documentation.
                          *
                          * These routes are public so developers
@@ -200,6 +219,10 @@ public class SecurityConfig {
 
                         /*
                          * Secure everything else by default.
+                         *
+                         * This means /actuator/info also requires
+                         * a valid JWT even though it is exposed
+                         * over HTTP.
                          */
                         .anyRequest()
                         .authenticated()
