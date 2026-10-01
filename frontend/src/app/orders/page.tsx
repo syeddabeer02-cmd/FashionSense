@@ -126,7 +126,9 @@ export default function OrdersPage() {
     }, []);
 
   useEffect(() => {
-    loadOrders();
+    void Promise.resolve().then(
+      loadOrders
+    );
   }, [loadOrders]);
 
   function formatMoney(

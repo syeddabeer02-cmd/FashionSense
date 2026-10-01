@@ -34,7 +34,7 @@ jobs:
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
 
-      JWT_SECRET: ci-only-fashion-sense-jwt-secret-0123456789-abcdefghijklmnopqrstuvwxyz
+      JWT_SECRET: ZmFzaGlvbi1zZW5zZS1jaS1qd3Qtc2VjcmV0LTIwMjYtMDEyMzQ1Njc4OWFiY2RlZg==
 
     steps:
 

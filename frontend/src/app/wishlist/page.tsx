@@ -158,7 +158,9 @@ export default function WishlistPage() {
     }, []);
 
   useEffect(() => {
-    loadWishlist();
+    void Promise.resolve().then(
+      loadWishlist
+    );
   }, [loadWishlist]);
 
   async function removeFromWishlist(

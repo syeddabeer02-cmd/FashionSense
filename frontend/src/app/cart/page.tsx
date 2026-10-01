@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-
 import {
   useCallback,
   useEffect,
@@ -19,9 +18,7 @@ interface ErrorResponse {
 
 export default function CartPage() {
   const [cart, setCart] =
-    useState<CartResponse | null>(
-      null
-    );
+    useState<CartResponse | null>(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -139,7 +136,9 @@ export default function CartPage() {
     }, []);
 
   useEffect(() => {
-    loadCart();
+    void Promise.resolve().then(
+      loadCart
+    );
   }, [loadCart]);
 
   async function updateQuantity(
