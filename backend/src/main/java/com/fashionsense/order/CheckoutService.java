@@ -12,11 +12,13 @@ import com.fashionsense.customer.UserRepository;
 import com.fashionsense.customer.address.Address;
 import com.fashionsense.customer.address.AddressNotFoundException;
 import com.fashionsense.customer.address.AddressRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +47,7 @@ public class CheckoutService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductCacheService productCacheService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public CheckoutService(
             CartRepository cartRepository,
@@ -53,7 +56,8 @@ public class CheckoutService {
             AddressRepository addressRepository,
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
-            ProductCacheService productCacheService
+            ProductCacheService productCacheService,
+            ApplicationEventPublisher applicationEventPublisher
     ) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -62,6 +66,7 @@ public class CheckoutService {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.productCacheService = productCacheService;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Transactional
@@ -368,6 +373,17 @@ public class CheckoutService {
                             productSlug
                     );
         }
+
+        applicationEventPublisher.publishEvent(
+                new OrderConfirmedEvent(
+                        savedOrder.getOrderNumber(),
+                        userId,
+                        savedOrder.getTotalAmount(),
+                        savedOrder.getShippingMethod().name(),
+                        savedOrder.getPaymentMethod().name(),
+                        Instant.now()
+                )
+        );
 
         return OrderResponse.from(
                 savedOrder,

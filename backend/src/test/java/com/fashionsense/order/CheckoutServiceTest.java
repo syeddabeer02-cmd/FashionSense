@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -61,6 +62,9 @@ class CheckoutServiceTest {
     @Mock
     private ProductCacheService productCacheService;
 
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
     private CheckoutService checkoutService;
 
     @BeforeEach
@@ -73,7 +77,8 @@ class CheckoutServiceTest {
                 addressRepository,
                 orderRepository,
                 orderItemRepository,
-                productCacheService
+                productCacheService,
+                applicationEventPublisher
         );
     }
 
@@ -202,6 +207,30 @@ class CheckoutServiceTest {
                 .evictProductDetailAfterCommit(
                         "test-hoodie"
                 );
+
+        verify(applicationEventPublisher)
+                .publishEvent(
+                        org.mockito.ArgumentMatchers.<Object>argThat(event ->
+                                event instanceof OrderConfirmedEvent confirmedEvent
+                                        && USER_ID.equals(
+                                                confirmedEvent.userId()
+                                        )
+                                        && response.orderNumber().equals(
+                                                confirmedEvent.orderNumber()
+                                        )
+                                        && new BigDecimal("86.59")
+                                        .compareTo(
+                                                confirmedEvent.totalAmount()
+                                        ) == 0
+                                        && "STANDARD".equals(
+                                                confirmedEvent.shippingMethod()
+                                        )
+                                        && "CARD".equals(
+                                                confirmedEvent.paymentMethod()
+                                        )
+                                        && confirmedEvent.occurredAt() != null
+                        )
+                );
     }
 
     @Test
@@ -272,6 +301,11 @@ class CheckoutServiceTest {
                 .evictProductDetailAfterCommit(
                         "test-hoodie"
                 );
+
+        verify(applicationEventPublisher)
+                .publishEvent(
+                        any(OrderConfirmedEvent.class)
+                );
     }
 
     @Test
@@ -322,6 +356,11 @@ class CheckoutServiceTest {
                 .evictProductDetailAfterCommit(
                         "test-hoodie"
                 );
+
+        verify(applicationEventPublisher)
+                .publishEvent(
+                        any(OrderConfirmedEvent.class)
+                );
     }
 
     @Test
@@ -358,7 +397,8 @@ class CheckoutServiceTest {
         verifyNoInteractions(
                 orderRepository,
                 orderItemRepository,
-                productCacheService
+                productCacheService,
+                applicationEventPublisher
         );
 
         verify(cartItemRepository, never())
@@ -405,7 +445,8 @@ class CheckoutServiceTest {
         verifyNoInteractions(
                 orderRepository,
                 orderItemRepository,
-                productCacheService
+                productCacheService,
+                applicationEventPublisher
         );
 
         verify(cartItemRepository, never())
@@ -491,7 +532,8 @@ class CheckoutServiceTest {
         verifyNoInteractions(
                 orderRepository,
                 orderItemRepository,
-                productCacheService
+                productCacheService,
+                applicationEventPublisher
         );
     }
 
