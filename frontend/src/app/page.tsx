@@ -1,6 +1,8 @@
 import { apiGet } from "@/lib/api";
 import type { ProductPage } from "@/types/product";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const categories = ["Men", "Women", "Kids", "Accessories"];
 
@@ -87,7 +89,7 @@ export default async function Home() {
 
             <p className="mt-6 max-w-xl text-lg leading-8 text-gray-600">
               Discover fashion across brands, styles, sizes, colors and
-              occasions—all in one place.
+              occasions&mdash;all in one place.
             </p>
 
             <div className="mt-8 flex gap-4">
@@ -234,7 +236,7 @@ export default async function Home() {
 
       <footer className="border-t border-gray-200 bg-gray-950">
         <div className="mx-auto max-w-7xl px-6 py-10 text-sm text-gray-400">
-          © 2026 Fashion Sense. Built as a full-stack ecommerce platform.
+          &copy; 2026 Fashion Sense. Built as a full-stack ecommerce platform.
         </div>
       </footer>
     </main>
