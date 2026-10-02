@@ -22,6 +22,38 @@ export async function POST(
     );
   }
 
+  const idempotencyKey =
+    request.headers.get(
+      "idempotency-key"
+    );
+
+  if (!idempotencyKey?.trim()) {
+    return Response.json(
+      {
+        message:
+          "Idempotency-Key header is required.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
+  if (
+    idempotencyKey.trim().length >
+    100
+  ) {
+    return Response.json(
+      {
+        message:
+          "Idempotency-Key must be 100 characters or fewer.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+
   try {
     const requestBody =
       await request.text();
@@ -41,6 +73,9 @@ export async function POST(
 
             Authorization:
               authorization,
+
+            "Idempotency-Key":
+              idempotencyKey.trim(),
           },
 
           body: requestBody,

@@ -40,12 +40,54 @@ public final class ProductSpecifications {
             }
 
             if (hasText(criteria.category())) {
-                predicates.add(
+
+                String categorySlug =
+                        criteria.category().toLowerCase();
+
+                Join<Object, Object> category =
+                        root.join("category", JoinType.INNER);
+
+                Join<Object, Object> parentCategory =
+                        category.join(
+                                "parent",
+                                JoinType.LEFT
+                        );
+
+                Join<Object, Object> grandparentCategory =
+                        parentCategory.join(
+                                "parent",
+                                JoinType.LEFT
+                        );
+
+                Predicate directCategory =
                         builder.equal(
                                 builder.lower(
-                                        root.get("category").get("slug")
+                                        category.get("slug")
                                 ),
-                                criteria.category().toLowerCase()
+                                categorySlug
+                        );
+
+                Predicate parentCategoryMatch =
+                        builder.equal(
+                                builder.lower(
+                                        parentCategory.get("slug")
+                                ),
+                                categorySlug
+                        );
+
+                Predicate grandparentCategoryMatch =
+                        builder.equal(
+                                builder.lower(
+                                        grandparentCategory.get("slug")
+                                ),
+                                categorySlug
+                        );
+
+                predicates.add(
+                        builder.or(
+                                directCategory,
+                                parentCategoryMatch,
+                                grandparentCategoryMatch
                         )
                 );
             }
@@ -71,7 +113,10 @@ public final class ProductSpecifications {
             if (hasText(criteria.occasion())) {
 
                 Join<Object, Object> occasionJoin =
-                        root.join("occasions", JoinType.INNER);
+                        root.join(
+                                "occasions",
+                                JoinType.INNER
+                        );
 
                 predicates.add(
                         builder.equal(
@@ -97,14 +142,18 @@ public final class ProductSpecifications {
                         query.subquery(Long.class);
 
                 Root<ProductVariant> variant =
-                        variantSubquery.from(ProductVariant.class);
+                        variantSubquery.from(
+                                ProductVariant.class
+                        );
 
                 List<Predicate> variantPredicates =
                         new ArrayList<>();
 
                 variantPredicates.add(
                         builder.equal(
-                                variant.get("product").get("id"),
+                                variant
+                                        .get("product")
+                                        .get("id"),
                                 root.get("id")
                         )
                 );
@@ -121,7 +170,9 @@ public final class ProductSpecifications {
                                     builder.lower(
                                             variant.get("size")
                                     ),
-                                    criteria.size().toLowerCase()
+                                    criteria
+                                            .size()
+                                            .toLowerCase()
                             )
                     );
                 }
@@ -132,7 +183,9 @@ public final class ProductSpecifications {
                                     builder.lower(
                                             variant.get("color")
                                     ),
-                                    criteria.color().toLowerCase()
+                                    criteria
+                                            .color()
+                                            .toLowerCase()
                             )
                     );
                 }
@@ -143,7 +196,9 @@ public final class ProductSpecifications {
                                     builder.lower(
                                             variant.get("style")
                                     ),
-                                    criteria.style().toLowerCase()
+                                    criteria
+                                            .style()
+                                            .toLowerCase()
                             )
                     );
                 }
@@ -154,13 +209,17 @@ public final class ProductSpecifications {
                                     builder.lower(
                                             variant.get("material")
                                     ),
-                                    criteria.material().toLowerCase()
+                                    criteria
+                                            .material()
+                                            .toLowerCase()
                             )
                     );
                 }
 
                 variantSubquery
-                        .select(variant.get("id"))
+                        .select(
+                                variant.get("id")
+                        )
                         .where(
                                 variantPredicates.toArray(
                                         new Predicate[0]
@@ -168,7 +227,9 @@ public final class ProductSpecifications {
                         );
 
                 predicates.add(
-                        builder.exists(variantSubquery)
+                        builder.exists(
+                                variantSubquery
+                        )
                 );
             }
 
@@ -180,7 +241,10 @@ public final class ProductSpecifications {
         };
     }
 
-    private static boolean hasText(String value) {
-        return value != null && !value.isBlank();
+    private static boolean hasText(
+            String value
+    ) {
+        return value != null
+                && !value.isBlank();
     }
 }

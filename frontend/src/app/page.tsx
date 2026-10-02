@@ -5,27 +5,110 @@ import type { ProductPage } from "@/types/product";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const categories = ["Men", "Women", "Kids", "Accessories"];
+type HomeProps = {
+  searchParams: Promise<{
+    category?: string | string[];
+    occasion?: string | string[];
+  }>;
+};
 
-  const occasions = [
-    "Wedding",
-    "Party",
-    "Office",
-    "Casual",
-    "Festive",
-    "Date Night",
+type FilterOption = {
+  label: string;
+  slug: string;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const params = await searchParams;
+
+  const categories: FilterOption[] = [
+    { label: "Men", slug: "men" },
+    { label: "Women", slug: "women" },
+    { label: "Kids", slug: "kids" },
+    { label: "Accessories", slug: "accessories" },
   ];
+
+  const occasions: FilterOption[] = [
+    { label: "Wedding", slug: "wedding" },
+    { label: "Party", slug: "party" },
+    { label: "Office", slug: "office" },
+    { label: "Casual", slug: "casual" },
+    { label: "Festive", slug: "festive" },
+    { label: "Date Night", slug: "date-night" },
+  ];
+
+  const rawCategory = params.category;
+  const rawOccasion = params.occasion;
+
+  const activeCategory =
+    typeof rawCategory === "string" ? rawCategory : undefined;
+
+  const activeOccasion =
+    typeof rawOccasion === "string" ? rawOccasion : undefined;
+
+  const selectedCategory = categories.find(
+    (category) => category.slug === activeCategory,
+  );
+
+  const selectedOccasion = occasions.find(
+    (occasion) => occasion.slug === activeOccasion,
+  );
+
+  const buildProductUrl = ({
+    category,
+    occasion,
+  }: {
+    category?: string;
+    occasion?: string;
+  }) => {
+    const query = new URLSearchParams();
+
+    if (category) {
+      query.set("category", category);
+    }
+
+    if (occasion) {
+      query.set("occasion", occasion);
+    }
+
+    const queryString = query.toString();
+
+    return queryString
+      ? `/?${queryString}#featured-products`
+      : "/#featured-products";
+  };
+
+  const apiQuery = new URLSearchParams();
+
+  if (activeCategory) {
+    apiQuery.set("category", activeCategory);
+  }
+
+  if (activeOccasion) {
+    apiQuery.set("occasion", activeOccasion);
+  }
+
+  apiQuery.set("pageSize", "100");
 
   let products: ProductPage | null = null;
   let productLoadError = false;
 
   try {
-    products = await apiGet<ProductPage>("/api/products");
+    products = await apiGet<ProductPage>(
+      `/api/products?${apiQuery.toString()}`,
+    );
   } catch (error) {
     console.error("Failed to load products:", error);
     productLoadError = true;
   }
+
+  const productHeading =
+    selectedCategory && selectedOccasion
+      ? `${selectedCategory.label} · ${selectedOccasion.label}`
+      : selectedCategory
+        ? `${selectedCategory.label} products`
+        : selectedOccasion
+          ? `${selectedOccasion.label} picks`
+          : "Featured products";
 
   return (
     <main className="min-h-screen bg-white text-gray-900">
@@ -45,13 +128,20 @@ export default async function Home() {
 
           <nav className="hidden gap-6 font-medium lg:flex">
             {categories.map((category) => (
-              <a
-                key={category}
-                href="#departments"
-                className="transition hover:text-pink-600"
+              <Link
+                key={category.slug}
+                href={buildProductUrl({
+                  category: category.slug,
+                  occasion: activeOccasion,
+                })}
+                className={
+                  activeCategory === category.slug
+                    ? "text-pink-600"
+                    : "transition hover:text-pink-600"
+                }
               >
-                {category}
-              </a>
+                {category.label}
+              </Link>
             ))}
           </nav>
 
@@ -60,6 +150,7 @@ export default async function Home() {
               <input
                 type="text"
                 placeholder="Search products, brands and more..."
+                aria-label="Search products"
                 className="w-full rounded-md border border-gray-300 bg-gray-50 px-4 py-2.5 outline-none transition focus:border-pink-500 focus:bg-white"
               />
             </div>
@@ -107,19 +198,19 @@ export default async function Home() {
             </p>
 
             <div className="mt-8 flex gap-4">
-              <a
-                href="#featured-products"
+              <Link
+                href="/#featured-products"
                 className="rounded-md bg-gray-950 px-6 py-3 font-semibold text-white transition hover:bg-pink-600"
               >
                 Shop Now
-              </a>
+              </Link>
 
-              <a
-                href="#departments"
+              <Link
+                href="/#departments"
                 className="rounded-md border border-gray-300 bg-white px-6 py-3 font-semibold transition hover:border-gray-950"
               >
                 Explore Collections
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -154,23 +245,34 @@ export default async function Home() {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category, index) => (
-            <a
-              key={category}
-              href="#featured-products"
-              className={`flex min-h-56 items-end rounded-2xl p-6 text-2xl font-bold transition hover:-translate-y-1 ${
-                index === 0
-                  ? "bg-slate-200"
-                  : index === 1
-                    ? "bg-rose-200"
-                    : index === 2
-                      ? "bg-amber-100"
-                      : "bg-purple-200"
-              }`}
-            >
-              {category}
-            </a>
-          ))}
+          {categories.map((category, index) => {
+            const selected = activeCategory === category.slug;
+
+            return (
+              <Link
+                key={category.slug}
+                href={buildProductUrl({
+                  category: category.slug,
+                  occasion: activeOccasion,
+                })}
+                className={`flex min-h-56 items-end rounded-2xl p-6 text-2xl font-bold transition hover:-translate-y-1 ${
+                  index === 0
+                    ? "bg-slate-200"
+                    : index === 1
+                      ? "bg-rose-200"
+                      : index === 2
+                        ? "bg-amber-100"
+                        : "bg-purple-200"
+                } ${
+                  selected
+                    ? "ring-4 ring-pink-500 ring-offset-2"
+                    : ""
+                }`}
+              >
+                {category.label}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -188,15 +290,26 @@ export default async function Home() {
           </h2>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-            {occasions.map((occasion) => (
-              <a
-                key={occasion}
-                href="#featured-products"
-                className="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center font-semibold shadow-sm transition hover:border-pink-400 hover:text-pink-600"
-              >
-                {occasion}
-              </a>
-            ))}
+            {occasions.map((occasion) => {
+              const selected = activeOccasion === occasion.slug;
+
+              return (
+                <Link
+                  key={occasion.slug}
+                  href={buildProductUrl({
+                    category: activeCategory,
+                    occasion: occasion.slug,
+                  })}
+                  className={`rounded-xl border bg-white px-5 py-8 text-center font-semibold shadow-sm transition ${
+                    selected
+                      ? "border-pink-500 text-pink-600 ring-2 ring-pink-200"
+                      : "border-gray-200 hover:border-pink-400 hover:text-pink-600"
+                  }`}
+                >
+                  {occasion.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -205,13 +318,38 @@ export default async function Home() {
         id="featured-products"
         className="mx-auto max-w-7xl scroll-mt-8 px-6 py-16"
       >
-        <p className="text-sm font-semibold uppercase tracking-widest text-pink-600">
-          Trending
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-widest text-pink-600">
+              {activeCategory || activeOccasion
+                ? "Filtered collection"
+                : "Trending"}
+            </p>
 
-        <h2 className="mt-2 text-3xl font-bold">
-          Featured products
-        </h2>
+            <h2 className="mt-2 text-3xl font-bold">
+              {productHeading}
+            </h2>
+
+            {(selectedCategory || selectedOccasion) && (
+              <p className="mt-2 text-sm text-gray-500">
+                {selectedCategory &&
+                  `Department: ${selectedCategory.label}`}
+                {selectedCategory && selectedOccasion && " · "}
+                {selectedOccasion &&
+                  `Occasion: ${selectedOccasion.label}`}
+              </p>
+            )}
+          </div>
+
+          {(activeCategory || activeOccasion) && (
+            <Link
+              href="/#featured-products"
+              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold transition hover:border-pink-500 hover:text-pink-600"
+            >
+              Clear filters
+            </Link>
+          )}
+        </div>
 
         {productLoadError ? (
           <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
@@ -259,7 +397,7 @@ export default async function Home() {
           </div>
         ) : (
           <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-500">
-            No products found.
+            No products found for the selected filters.
           </div>
         )}
       </section>

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -78,6 +79,11 @@ export default function CheckoutPage() {
       null
     );
 
+  const idempotencyKeyRef =
+    useRef<string | null>(
+      null
+    );
+
   function getToken(): string {
     const token =
       window.localStorage.getItem(
@@ -91,6 +97,17 @@ export default function CheckoutPage() {
     }
 
     return token;
+  }
+
+  function getIdempotencyKey(): string {
+    if (
+      !idempotencyKeyRef.current
+    ) {
+      idempotencyKeyRef.current =
+        crypto.randomUUID();
+    }
+
+    return idempotencyKeyRef.current;
   }
 
   async function parseResponse<T>(
@@ -295,6 +312,9 @@ export default function CheckoutPage() {
       const token =
         getToken();
 
+      const idempotencyKey =
+        getIdempotencyKey();
+
       const response =
         await fetch(
           "/api/checkout",
@@ -307,6 +327,9 @@ export default function CheckoutPage() {
 
               Authorization:
                 `Bearer ${token}`,
+
+              "Idempotency-Key":
+                idempotencyKey,
             },
 
             body: JSON.stringify(
