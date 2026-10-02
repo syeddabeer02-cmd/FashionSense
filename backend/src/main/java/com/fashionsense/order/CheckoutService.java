@@ -6,6 +6,7 @@ import com.fashionsense.cart.CartItemRepository;
 import com.fashionsense.cart.CartItemUnavailableException;
 import com.fashionsense.cart.CartRepository;
 import com.fashionsense.catalog.variant.ProductVariant;
+import com.fashionsense.catalog.variant.ProductVariantRepository;
 import com.fashionsense.config.ProductCacheService;
 import com.fashionsense.customer.User;
 import com.fashionsense.customer.UserRepository;
@@ -53,6 +54,7 @@ public class CheckoutService {
     private final AddressRepository addressRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final ProductCacheService productCacheService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final PromotionEngine promotionEngine;
@@ -64,6 +66,7 @@ public class CheckoutService {
             AddressRepository addressRepository,
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
+            ProductVariantRepository productVariantRepository,
             ProductCacheService productCacheService,
             ApplicationEventPublisher applicationEventPublisher,
             PromotionEngine promotionEngine
@@ -85,6 +88,9 @@ public class CheckoutService {
 
         this.orderItemRepository =
                 orderItemRepository;
+
+        this.productVariantRepository =
+                productVariantRepository;
 
         this.productCacheService =
                 productCacheService;
@@ -161,6 +167,14 @@ public class CheckoutService {
                 );
             }
 
+            /*
+             * This is an early availability check for
+             * fast customer feedback.
+             *
+             * It is NOT the final concurrency guarantee.
+             * PostgreSQL performs the authoritative atomic
+             * stock reservation later in this transaction.
+             */
             if (variant.getStockQuantity()
                     < cartItem.getQuantity()) {
 
@@ -380,6 +394,39 @@ public class CheckoutService {
             ProductVariant variant =
                     cartItem.getVariant();
 
+            /*
+             * Authoritative inventory reservation.
+             *
+             * PostgreSQL performs:
+             *
+             * stock = stock - requested quantity
+             *
+             * only when:
+             *
+             * stock >= requested quantity.
+             *
+             * This is one atomic database statement.
+             * If another checkout consumes the stock first,
+             * this update affects zero rows.
+             *
+             * Throwing the exception causes the entire
+             * @Transactional checkout to roll back,
+             * including any stock already reserved for
+             * earlier cart items and the new order.
+             */
+            int updatedRows =
+                    productVariantRepository
+                            .decrementStockIfAvailable(
+                                    variant.getId(),
+                                    cartItem.getQuantity()
+                            );
+
+            if (updatedRows != 1) {
+                throw new CartItemUnavailableException(
+                        "Requested quantity is no longer available"
+                );
+            }
+
             BigDecimal unitPrice =
                     getEffectivePrice(
                             variant
@@ -445,11 +492,6 @@ public class CheckoutService {
 
             orderItems.add(
                     orderItem
-            );
-
-            variant.setStockQuantity(
-                    variant.getStockQuantity()
-                            - cartItem.getQuantity()
             );
 
             affectedProductSlugs.add(

@@ -1,6 +1,7 @@
 package com.fashionsense.catalog.variant;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,5 +24,19 @@ public interface ProductVariantRepository
             """)
     List<ProductVariant> findByProductIdWithProduct(
             @Param("productId") Long productId
+    );
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            UPDATE ProductVariant v
+            SET v.stockQuantity =
+                v.stockQuantity - :quantity
+            WHERE v.id = :variantId
+              AND v.active = true
+              AND v.stockQuantity >= :quantity
+            """)
+    int decrementStockIfAvailable(
+            @Param("variantId") Long variantId,
+            @Param("quantity") int quantity
     );
 }

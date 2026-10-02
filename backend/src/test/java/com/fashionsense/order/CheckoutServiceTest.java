@@ -7,6 +7,7 @@ import com.fashionsense.cart.CartItemUnavailableException;
 import com.fashionsense.cart.CartRepository;
 import com.fashionsense.catalog.product.Product;
 import com.fashionsense.catalog.variant.ProductVariant;
+import com.fashionsense.catalog.variant.ProductVariantRepository;
 import com.fashionsense.config.ProductCacheService;
 import com.fashionsense.customer.User;
 import com.fashionsense.customer.UserRepository;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -41,14 +43,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CheckoutServiceTest {
 
-    private static final Long USER_ID =
-            1L;
-
-    private static final Long ADDRESS_ID =
-            100L;
-
-    private static final Long CART_ID =
-            300L;
+    private static final Long USER_ID = 1L;
+    private static final Long ADDRESS_ID = 100L;
+    private static final Long CART_ID = 300L;
 
     @Mock
     private CartRepository cartRepository;
@@ -69,6 +66,9 @@ class CheckoutServiceTest {
     private OrderItemRepository orderItemRepository;
 
     @Mock
+    private ProductVariantRepository productVariantRepository;
+
+    @Mock
     private ProductCacheService productCacheService;
 
     @Mock
@@ -84,28 +84,36 @@ class CheckoutServiceTest {
 
         lenient()
                 .when(
-                        promotionEngine
-                                .calculateBestProductDiscount(
-                                        nullable(Long.class),
-                                        any(BigDecimal.class),
-                                        anyInt()
-                                )
+                        promotionEngine.calculateBestProductDiscount(
+                                nullable(Long.class),
+                                any(BigDecimal.class),
+                                anyInt()
+                        )
                 )
-                .thenReturn(
-                        new BigDecimal("0.00")
-                );
+                .thenReturn(new BigDecimal("0.00"));
 
         lenient()
                 .when(
-                        promotionEngine
-                                .calculateCartDiscount(
-                                        nullable(String.class),
-                                        any(BigDecimal.class)
-                                )
+                        promotionEngine.calculateCartDiscount(
+                                nullable(String.class),
+                                any(BigDecimal.class)
+                        )
                 )
-                .thenReturn(
-                        new BigDecimal("0.00")
-                );
+                .thenReturn(new BigDecimal("0.00"));
+
+        /*
+         * By default, the atomic database stock reservation succeeds.
+         * Individual tests can override this with 0 to simulate
+         * another checkout winning the inventory race.
+         */
+        lenient()
+                .when(
+                        productVariantRepository.decrementStockIfAvailable(
+                                nullable(Long.class),
+                                anyInt()
+                        )
+                )
+                .thenReturn(1);
 
         checkoutService =
                 new CheckoutService(
@@ -115,6 +123,7 @@ class CheckoutServiceTest {
                         addressRepository,
                         orderRepository,
                         orderItemRepository,
+                        productVariantRepository,
                         productCacheService,
                         applicationEventPublisher,
                         promotionEngine
@@ -193,15 +202,14 @@ class CheckoutServiceTest {
         );
 
         assertTrue(
-                response.orderNumber()
-                        .startsWith("FS-")
+                response.orderNumber().startsWith("FS-")
         );
 
-        assertEquals(
-                9,
-                testData.variant()
-                        .getStockQuantity()
-        );
+        verify(productVariantRepository)
+                .decrementStockIfAvailable(
+                        nullable(Long.class),
+                        eq(1)
+                );
 
         assertEquals(
                 1,
@@ -231,9 +239,7 @@ class CheckoutServiceTest {
 
         verify(cartItemRepository)
                 .deleteAll(
-                        List.of(
-                                testData.cartItem()
-                        )
+                        List.of(testData.cartItem())
                 );
 
         verify(cartItemRepository)
@@ -259,34 +265,23 @@ class CheckoutServiceTest {
                         org.mockito.ArgumentMatchers
                                 .<Object>argThat(
                                         event ->
-                                                event
-                                                        instanceof OrderConfirmedEvent confirmedEvent
+                                                event instanceof OrderConfirmedEvent confirmedEvent
                                                         && USER_ID.equals(
                                                         confirmedEvent.userId()
                                                 )
-                                                        && response
-                                                        .orderNumber()
-                                                        .equals(
-                                                                confirmedEvent
-                                                                        .orderNumber()
-                                                        )
-                                                        && new BigDecimal(
-                                                        "86.59"
-                                                ).compareTo(
-                                                        confirmedEvent
-                                                                .totalAmount()
+                                                        && response.orderNumber().equals(
+                                                        confirmedEvent.orderNumber()
+                                                )
+                                                        && new BigDecimal("86.59").compareTo(
+                                                        confirmedEvent.totalAmount()
                                                 ) == 0
                                                         && "STANDARD".equals(
-                                                        confirmedEvent
-                                                                .shippingMethod()
+                                                        confirmedEvent.shippingMethod()
                                                 )
                                                         && "CARD".equals(
-                                                        confirmedEvent
-                                                                .paymentMethod()
+                                                        confirmedEvent.paymentMethod()
                                                 )
-                                                        && confirmedEvent
-                                                        .occurredAt()
-                                                        != null
+                                                        && confirmedEvent.occurredAt() != null
                                 )
                 );
     }
@@ -361,6 +356,12 @@ class CheckoutServiceTest {
                 response.paymentStatus()
         );
 
+        verify(productVariantRepository)
+                .decrementStockIfAvailable(
+                        nullable(Long.class),
+                        eq(1)
+                );
+
         verify(productCacheService)
                 .evictProductDetailAfterCommit(
                         "test-hoodie"
@@ -368,9 +369,7 @@ class CheckoutServiceTest {
 
         verify(applicationEventPublisher)
                 .publishEvent(
-                        any(
-                                OrderConfirmedEvent.class
-                        )
+                        any(OrderConfirmedEvent.class)
                 );
     }
 
@@ -424,6 +423,12 @@ class CheckoutServiceTest {
                 response.totalAmount()
         );
 
+        verify(productVariantRepository)
+                .decrementStockIfAvailable(
+                        nullable(Long.class),
+                        eq(1)
+                );
+
         verify(productCacheService)
                 .evictProductDetailAfterCommit(
                         "test-hoodie"
@@ -431,9 +436,7 @@ class CheckoutServiceTest {
 
         verify(applicationEventPublisher)
                 .publishEvent(
-                        any(
-                                OrderConfirmedEvent.class
-                        )
+                        any(OrderConfirmedEvent.class)
                 );
     }
 
@@ -447,22 +450,20 @@ class CheckoutServiceTest {
         );
 
         when(
-                promotionEngine
-                        .calculateBestProductDiscount(
-                                nullable(Long.class),
-                                any(BigDecimal.class),
-                                anyInt()
-                        )
+                promotionEngine.calculateBestProductDiscount(
+                        nullable(Long.class),
+                        any(BigDecimal.class),
+                        anyInt()
+                )
         ).thenReturn(
                 new BigDecimal("10.00")
         );
 
         when(
-                promotionEngine
-                        .calculateCartDiscount(
-                                "SAVE5",
-                                new BigDecimal("69.99")
-                        )
+                promotionEngine.calculateCartDiscount(
+                        "SAVE5",
+                        new BigDecimal("69.99")
+                )
         ).thenReturn(
                 new BigDecimal("5.00")
         );
@@ -508,7 +509,6 @@ class CheckoutServiceTest {
         );
 
         /*
-         * Tax:
          * 64.99 * 8.25% = 5.36
          */
         assertEquals(
@@ -537,6 +537,12 @@ class CheckoutServiceTest {
                 response.paymentStatus()
         );
 
+        verify(productVariantRepository)
+                .decrementStockIfAvailable(
+                        nullable(Long.class),
+                        eq(1)
+                );
+
         verify(promotionEngine)
                 .calculateCartDiscount(
                         "SAVE5",
@@ -548,13 +554,9 @@ class CheckoutServiceTest {
                         org.mockito.ArgumentMatchers
                                 .<Object>argThat(
                                         event ->
-                                                event
-                                                        instanceof OrderConfirmedEvent confirmedEvent
-                                                        && new BigDecimal(
-                                                        "76.34"
-                                                ).compareTo(
-                                                        confirmedEvent
-                                                                .totalAmount()
+                                                event instanceof OrderConfirmedEvent confirmedEvent
+                                                        && new BigDecimal("76.34").compareTo(
+                                                        confirmedEvent.totalAmount()
                                                 ) == 0
                                 )
                 );
@@ -595,6 +597,7 @@ class CheckoutServiceTest {
         verifyNoInteractions(
                 orderRepository,
                 orderItemRepository,
+                productVariantRepository,
                 productCacheService,
                 applicationEventPublisher,
                 promotionEngine
@@ -604,6 +607,93 @@ class CheckoutServiceTest {
                 .deleteAll(
                         anyList()
                 );
+    }
+
+    @Test
+    void checkoutRejectsInventoryWhenAtomicReservationLosesRace() {
+
+        prepareCheckout(
+                new BigDecimal("79.99"),
+                10,
+                1
+        );
+
+        /*
+         * The initial Java-side stock check sees sufficient inventory.
+         *
+         * We then simulate another transaction purchasing the remaining
+         * inventory before this checkout performs its atomic reservation.
+         *
+         * Zero affected rows means this checkout lost the race.
+         */
+        when(
+                productVariantRepository.decrementStockIfAvailable(
+                        nullable(Long.class),
+                        eq(1)
+                )
+        ).thenReturn(0);
+
+        /*
+         * Checkout creates the order before attempting the inventory
+         * reservation, so orderRepository.save() is reached.
+         *
+         * OrderItemRepository.saveAll() must NOT be stubbed here because
+         * execution correctly stops before reaching it.
+         */
+        stubOrderSaveOnly();
+
+        CheckoutRequest request =
+                new CheckoutRequest(
+                        ADDRESS_ID,
+                        ShippingMethod.STANDARD,
+                        PaymentMethod.CARD,
+                        null
+                );
+
+        CartItemUnavailableException exception =
+                assertThrows(
+                        CartItemUnavailableException.class,
+                        () ->
+                                checkoutService.checkout(
+                                        USER_ID,
+                                        request
+                                )
+                );
+
+        assertEquals(
+                "Requested quantity is no longer available",
+                exception.getMessage()
+        );
+
+        verify(productVariantRepository)
+                .decrementStockIfAvailable(
+                        nullable(Long.class),
+                        eq(1)
+                );
+
+        /*
+         * Nothing after the failed inventory reservation may execute.
+         *
+         * In the real @Transactional service, the exception also causes
+         * the earlier order INSERT to roll back.
+         */
+        verify(orderItemRepository, never())
+                .saveAll(
+                        anyList()
+                );
+
+        verify(cartItemRepository, never())
+                .deleteAll(
+                        anyList()
+                );
+
+        verify(cartItemRepository, never())
+                .flush();
+
+        verifyNoInteractions(
+                productCacheService,
+                applicationEventPublisher
+        );
     }
 
     @Test
@@ -645,6 +735,7 @@ class CheckoutServiceTest {
         verifyNoInteractions(
                 orderRepository,
                 orderItemRepository,
+                productVariantRepository,
                 productCacheService,
                 applicationEventPublisher,
                 promotionEngine
@@ -671,43 +762,31 @@ class CheckoutServiceTest {
                 );
 
         when(cart.getId())
-                .thenReturn(
-                        CART_ID
-                );
+                .thenReturn(CART_ID);
 
         when(
-                userRepository
-                        .findById(
-                                USER_ID
-                        )
+                userRepository.findById(USER_ID)
         ).thenReturn(
                 Optional.of(user)
         );
 
         when(
-                addressRepository
-                        .findByIdAndUserId(
-                                ADDRESS_ID,
-                                USER_ID
-                        )
+                addressRepository.findByIdAndUserId(
+                        ADDRESS_ID,
+                        USER_ID
+                )
         ).thenReturn(
                 Optional.of(address)
         );
 
         when(
-                cartRepository
-                        .findByUserId(
-                                USER_ID
-                        )
+                cartRepository.findByUserId(USER_ID)
         ).thenReturn(
                 Optional.of(cart)
         );
 
         when(
-                cartItemRepository
-                        .findAllWithDetails(
-                                CART_ID
-                        )
+                cartItemRepository.findAllWithDetails(CART_ID)
         ).thenReturn(
                 List.of()
         );
@@ -738,6 +817,7 @@ class CheckoutServiceTest {
         verifyNoInteractions(
                 orderRepository,
                 orderItemRepository,
+                productVariantRepository,
                 productCacheService,
                 applicationEventPublisher,
                 promotionEngine
@@ -762,9 +842,7 @@ class CheckoutServiceTest {
                 );
 
         when(cart.getId())
-                .thenReturn(
-                        CART_ID
-                );
+                .thenReturn(CART_ID);
 
         Product product =
                 new Product();
@@ -840,42 +918,30 @@ class CheckoutServiceTest {
         );
 
         when(
-                userRepository
-                        .findById(
-                                USER_ID
-                        )
+                userRepository.findById(USER_ID)
         ).thenReturn(
                 Optional.of(user)
         );
 
         when(
-                addressRepository
-                        .findByIdAndUserId(
-                                ADDRESS_ID,
-                                USER_ID
-                        )
+                addressRepository.findByIdAndUserId(
+                        ADDRESS_ID,
+                        USER_ID
+                )
         ).thenReturn(
                 Optional.of(address)
         );
 
         when(
-                cartRepository
-                        .findByUserId(
-                                USER_ID
-                        )
+                cartRepository.findByUserId(USER_ID)
         ).thenReturn(
                 Optional.of(cart)
         );
 
         when(
-                cartItemRepository
-                        .findAllWithDetails(
-                                CART_ID
-                        )
+                cartItemRepository.findAllWithDetails(CART_ID)
         ).thenReturn(
-                List.of(
-                        cartItem
-                )
+                List.of(cartItem)
         );
 
         return new TestData(
@@ -884,20 +950,21 @@ class CheckoutServiceTest {
         );
     }
 
-    private void stubSuccessfulPersistence() {
+    private void stubOrderSaveOnly() {
 
         when(
                 orderRepository.save(
-                        any(
-                                CustomerOrder.class
-                        )
+                        any(CustomerOrder.class)
                 )
         ).thenAnswer(
                 invocation ->
-                        invocation.getArgument(
-                                0
-                        )
+                        invocation.getArgument(0)
         );
+    }
+
+    private void stubSuccessfulPersistence() {
+
+        stubOrderSaveOnly();
 
         when(
                 orderItemRepository.saveAll(
@@ -905,9 +972,7 @@ class CheckoutServiceTest {
                 )
         ).thenAnswer(
                 invocation ->
-                        invocation.getArgument(
-                                0
-                        )
+                        invocation.getArgument(0)
         );
     }
 
