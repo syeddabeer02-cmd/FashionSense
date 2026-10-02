@@ -119,4 +119,92 @@ public class ProductVariantService {
 
         return savedVariant;
     }
+
+    @Transactional
+    public ProductVariant updateVariant(
+            Long variantId,
+            String size,
+            String color,
+            String style,
+            String material,
+            BigDecimal price,
+            int stockQuantity,
+            boolean active
+    ) {
+
+        if (stockQuantity < 0) {
+            throw new IllegalArgumentException(
+                    "Stock quantity cannot be negative"
+            );
+        }
+
+        if (price != null
+                && price.compareTo(BigDecimal.ZERO) < 0) {
+
+            throw new IllegalArgumentException(
+                    "Variant price cannot be negative"
+            );
+        }
+
+        ProductVariant variant =
+                productVariantRepository.findById(variantId)
+                        .orElseThrow(() ->
+                                new ProductVariantNotFoundException(
+                                        "Product variant not found with id: "
+                                                + variantId
+                                )
+                        );
+
+        variant.setSize(size);
+        variant.setColor(color);
+        variant.setStyle(style);
+        variant.setMaterial(material);
+        variant.setPrice(price);
+        variant.setStockQuantity(stockQuantity);
+        variant.setActive(active);
+
+        ProductVariant savedVariant =
+                productVariantRepository.save(variant);
+
+        productCacheService
+                .evictProductDetailAfterCommit(
+                        variant.getProduct().getSlug()
+                );
+
+        return savedVariant;
+    }
+
+    @Transactional
+    public ProductVariant updateStock(
+            Long variantId,
+            int stockQuantity
+    ) {
+
+        if (stockQuantity < 0) {
+            throw new IllegalArgumentException(
+                    "Stock quantity cannot be negative"
+            );
+        }
+
+        ProductVariant variant =
+                productVariantRepository.findById(variantId)
+                        .orElseThrow(() ->
+                                new ProductVariantNotFoundException(
+                                        "Product variant not found with id: "
+                                                + variantId
+                                )
+                        );
+
+        variant.setStockQuantity(stockQuantity);
+
+        ProductVariant savedVariant =
+                productVariantRepository.save(variant);
+
+        productCacheService
+                .evictProductDetailAfterCommit(
+                        variant.getProduct().getSlug()
+                );
+
+        return savedVariant;
+    }
 }

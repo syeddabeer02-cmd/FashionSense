@@ -26,6 +26,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -112,7 +113,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccountNotActiveException.class)
-    public ResponseEntity<Map<String, Object>> handleForbidden(
+    public ResponseEntity<Map<String, Object>> handleAccountNotActive(
             AccountNotActiveException ex,
             HttpServletRequest request
     ) {
@@ -124,6 +125,24 @@ public class GlobalExceptionHandler {
                                 403,
                                 "Forbidden",
                                 ex.getMessage(),
+                                request.getRequestURI()
+                        )
+                );
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthorizationDenied(
+            AuthorizationDeniedException ex,
+            HttpServletRequest request
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(
+                        errorBody(
+                                403,
+                                "Forbidden",
+                                "Access denied",
                                 request.getRequestURI()
                         )
                 );
@@ -156,23 +175,30 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
 
-        Map<String, String> validationErrors = new LinkedHashMap<>();
+        Map<String, String> validationErrors =
+                new LinkedHashMap<>();
 
-        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+        for (FieldError fieldError :
+                ex.getBindingResult().getFieldErrors()) {
+
             validationErrors.put(
                     fieldError.getField(),
                     fieldError.getDefaultMessage()
             );
         }
 
-        Map<String, Object> body = errorBody(
-                400,
-                "Bad Request",
-                "Request validation failed",
-                request.getRequestURI()
-        );
+        Map<String, Object> body =
+                errorBody(
+                        400,
+                        "Bad Request",
+                        "Request validation failed",
+                        request.getRequestURI()
+                );
 
-        body.put("validationErrors", validationErrors);
+        body.put(
+                "validationErrors",
+                validationErrors
+        );
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -240,13 +266,33 @@ public class GlobalExceptionHandler {
             String path
     ) {
 
-        Map<String, Object> body = new LinkedHashMap<>();
+        Map<String, Object> body =
+                new LinkedHashMap<>();
 
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", status);
-        body.put("error", error);
-        body.put("message", message);
-        body.put("path", path);
+        body.put(
+                "timestamp",
+                LocalDateTime.now()
+        );
+
+        body.put(
+                "status",
+                status
+        );
+
+        body.put(
+                "error",
+                error
+        );
+
+        body.put(
+                "message",
+                message
+        );
+
+        body.put(
+                "path",
+                path
+        );
 
         return body;
     }

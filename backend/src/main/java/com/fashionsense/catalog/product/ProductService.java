@@ -238,4 +238,68 @@ public class ProductService {
 
         return productRepository.save(product);
     }
+
+    @Transactional
+    public Product updateProduct(
+            Long productId,
+            Long brandId,
+            Long categoryId,
+            String name,
+            String description,
+            BigDecimal basePrice,
+            boolean active
+    ) {
+
+        Product product =
+                productRepository.findById(productId)
+                        .orElseThrow(() ->
+                                new ProductNotFoundException(
+                                        "Product not found with id: "
+                                                + productId
+                                )
+                        );
+
+        Brand brand =
+                brandRepository.findById(brandId)
+                        .orElseThrow(() ->
+                                new BrandNotFoundException(
+                                        "Brand not found with id: "
+                                                + brandId
+                                )
+                        );
+
+        Category category =
+                categoryRepository.findById(categoryId)
+                        .orElseThrow(() ->
+                                new CategoryNotFoundException(
+                                        "Category not found with id: "
+                                                + categoryId
+                                )
+                        );
+
+        product.setBrand(brand);
+        product.setCategory(category);
+        product.setName(name);
+        product.setDescription(description);
+        product.setBasePrice(basePrice);
+        product.setActive(active);
+
+        productRepository.save(product);
+
+        productCacheService
+                .evictProductDetailAfterCommit(
+                        product.getSlug()
+                );
+
+        return productRepository
+                .findBySlugWithDetails(
+                        product.getSlug()
+                )
+                .orElseThrow(() ->
+                        new ProductNotFoundException(
+                                "Product not found with slug: "
+                                        + product.getSlug()
+                        )
+                );
+    }
 }

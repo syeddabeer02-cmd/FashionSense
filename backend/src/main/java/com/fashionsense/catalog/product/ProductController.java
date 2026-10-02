@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -177,5 +178,26 @@ public class ProductController {
                         occasionSlug
                 )
         );
+    }
+
+    @PutMapping("/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ProductResponse updateProduct(
+            @PathVariable Long productId,
+            @Valid @RequestBody ProductUpdateRequest request
+    ) {
+
+        Product product =
+                productService.updateProduct(
+                        productId,
+                        request.brandId(),
+                        request.categoryId(),
+                        request.name(),
+                        request.description(),
+                        request.basePrice(),
+                        request.active()
+                );
+
+        return ProductResponse.from(product);
     }
 }
