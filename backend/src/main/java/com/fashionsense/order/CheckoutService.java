@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -105,8 +106,62 @@ public class CheckoutService {
     @Transactional
     public OrderResponse checkout(
             Long userId,
-            CheckoutRequest request
+            CheckoutRequest request,
+            String idempotencyKey
     ) {
+        String normalizedIdempotencyKey =
+                idempotencyKey.trim();
+
+        /*
+         * Serialize checkout attempts that use the same
+         * customer + idempotency-key combination.
+         *
+         * PostgreSQL holds this advisory lock until the
+         * current transaction commits or rolls back.
+         *
+         * This works across multiple application instances
+         * because the lock lives in PostgreSQL rather than
+         * application memory.
+         */
+        orderRepository
+                .acquireCheckoutIdempotencyLock(
+                        userId,
+                        normalizedIdempotencyKey
+                );
+
+        /*
+         * If this request is a retry of a checkout that
+         * already completed, return the original order.
+         *
+         * This check intentionally happens BEFORE reading
+         * the cart. A successful first checkout empties the
+         * cart, but a retry must still return the previously
+         * created order instead of failing with "Cart is empty".
+         */
+        Optional<CustomerOrder> existingOrder =
+                orderRepository
+                        .findByUserIdAndIdempotencyKey(
+                                userId,
+                                normalizedIdempotencyKey
+                        );
+
+        if (existingOrder.isPresent()) {
+
+            CustomerOrder order =
+                    existingOrder.get();
+
+            List<OrderItem> existingItems =
+                    orderItemRepository
+                            .findByOrderIdOrderByIdAsc(
+                                    order.getId()
+                            );
+
+            return OrderResponse.from(
+                    order,
+                    existingItems
+            );
+        }
+
         User user =
                 userRepository.findById(userId)
                         .orElseThrow(() ->
@@ -168,10 +223,10 @@ public class CheckoutService {
             }
 
             /*
-             * This is an early availability check for
-             * fast customer feedback.
+             * Early availability check for fast customer
+             * feedback.
              *
-             * It is NOT the final concurrency guarantee.
+             * This is NOT the final concurrency guarantee.
              * PostgreSQL performs the authoritative atomic
              * stock reservation later in this transaction.
              */
@@ -335,6 +390,18 @@ public class CheckoutService {
 
         order.setOrderNumber(
                 generateOrderNumber()
+        );
+
+        /*
+         * Persist the key on the order itself.
+         *
+         * V11 also adds a UNIQUE constraint on
+         * (user_id, idempotency_key), giving us a second
+         * database-level invariant in addition to the
+         * advisory transaction lock.
+         */
+        order.setIdempotencyKey(
+                normalizedIdempotencyKey
         );
 
         order.setStatus(

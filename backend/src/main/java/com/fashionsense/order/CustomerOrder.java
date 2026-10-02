@@ -35,6 +35,12 @@ public class CustomerOrder {
     )
     private String orderNumber;
 
+    @Column(
+            name = "idempotency_key",
+            length = 100
+    )
+    private String idempotencyKey;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private OrderStatus status;
@@ -204,6 +210,16 @@ public class CustomerOrder {
             String orderNumber
     ) {
         this.orderNumber = orderNumber;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(
+            String idempotencyKey
+    ) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public OrderStatus getStatus() {

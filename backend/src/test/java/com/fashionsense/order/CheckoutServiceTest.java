@@ -101,11 +101,6 @@ class CheckoutServiceTest {
                 )
                 .thenReturn(new BigDecimal("0.00"));
 
-        /*
-         * By default, the atomic database stock reservation succeeds.
-         * Individual tests can override this with 0 to simulate
-         * another checkout winning the inventory race.
-         */
         lenient()
                 .when(
                         productVariantRepository.decrementStockIfAvailable(
@@ -153,7 +148,8 @@ class CheckoutServiceTest {
         OrderResponse response =
                 checkoutService.checkout(
                         USER_ID,
-                        request
+                        request,
+                        "checkout-standard-free-shipping"
                 );
 
         assertEquals(
@@ -308,7 +304,8 @@ class CheckoutServiceTest {
         OrderResponse response =
                 checkoutService.checkout(
                         USER_ID,
-                        request
+                        request,
+                        "checkout-express"
                 );
 
         assertEquals(
@@ -395,7 +392,8 @@ class CheckoutServiceTest {
         OrderResponse response =
                 checkoutService.checkout(
                         USER_ID,
-                        request
+                        request,
+                        "checkout-standard-paid-shipping"
                 );
 
         assertEquals(
@@ -481,7 +479,8 @@ class CheckoutServiceTest {
         OrderResponse response =
                 checkoutService.checkout(
                         USER_ID,
-                        request
+                        request,
+                        "checkout-promotions"
                 );
 
         assertEquals(
@@ -494,34 +493,16 @@ class CheckoutServiceTest {
                 response.discountAmount()
         );
 
-        /*
-         * 79.99
-         * - 10.00 product discount
-         * -  5.00 cart promotion
-         * = 64.99 discounted merchandise subtotal
-         *
-         * 64.99 is below the $75 free
-         * standard-shipping threshold.
-         */
         assertEquals(
                 new BigDecimal("5.99"),
                 response.shippingAmount()
         );
 
-        /*
-         * 64.99 * 8.25% = 5.36
-         */
         assertEquals(
                 new BigDecimal("5.36"),
                 response.taxAmount()
         );
 
-        /*
-         * 64.99
-         * + 5.99 shipping
-         * + 5.36 tax
-         * = 76.34
-         */
         assertEquals(
                 new BigDecimal("76.34"),
                 response.totalAmount()
@@ -585,7 +566,8 @@ class CheckoutServiceTest {
                         () ->
                                 checkoutService.checkout(
                                         USER_ID,
-                                        request
+                                        request,
+                                        "checkout-insufficient-inventory"
                                 )
                 );
 
@@ -595,7 +577,6 @@ class CheckoutServiceTest {
         );
 
         verifyNoInteractions(
-                orderRepository,
                 orderItemRepository,
                 productVariantRepository,
                 productCacheService,
@@ -618,14 +599,6 @@ class CheckoutServiceTest {
                 1
         );
 
-        /*
-         * The initial Java-side stock check sees sufficient inventory.
-         *
-         * We then simulate another transaction purchasing the remaining
-         * inventory before this checkout performs its atomic reservation.
-         *
-         * Zero affected rows means this checkout lost the race.
-         */
         when(
                 productVariantRepository.decrementStockIfAvailable(
                         nullable(Long.class),
@@ -633,13 +606,6 @@ class CheckoutServiceTest {
                 )
         ).thenReturn(0);
 
-        /*
-         * Checkout creates the order before attempting the inventory
-         * reservation, so orderRepository.save() is reached.
-         *
-         * OrderItemRepository.saveAll() must NOT be stubbed here because
-         * execution correctly stops before reaching it.
-         */
         stubOrderSaveOnly();
 
         CheckoutRequest request =
@@ -656,7 +622,8 @@ class CheckoutServiceTest {
                         () ->
                                 checkoutService.checkout(
                                         USER_ID,
-                                        request
+                                        request,
+                                        "checkout-inventory-race"
                                 )
                 );
 
@@ -671,12 +638,6 @@ class CheckoutServiceTest {
                         eq(1)
                 );
 
-        /*
-         * Nothing after the failed inventory reservation may execute.
-         *
-         * In the real @Transactional service, the exception also causes
-         * the earlier order INSERT to roll back.
-         */
         verify(orderItemRepository, never())
                 .saveAll(
                         anyList()
@@ -723,7 +684,8 @@ class CheckoutServiceTest {
                         () ->
                                 checkoutService.checkout(
                                         USER_ID,
-                                        request
+                                        request,
+                                        "checkout-inactive-variant"
                                 )
                 );
 
@@ -733,7 +695,6 @@ class CheckoutServiceTest {
         );
 
         verifyNoInteractions(
-                orderRepository,
                 orderItemRepository,
                 productVariantRepository,
                 productCacheService,
@@ -805,7 +766,8 @@ class CheckoutServiceTest {
                         () ->
                                 checkoutService.checkout(
                                         USER_ID,
-                                        request
+                                        request,
+                                        "checkout-empty-cart"
                                 )
                 );
 
@@ -815,7 +777,6 @@ class CheckoutServiceTest {
         );
 
         verifyNoInteractions(
-                orderRepository,
                 orderItemRepository,
                 productVariantRepository,
                 productCacheService,

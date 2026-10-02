@@ -1,6 +1,8 @@
 package com.fashionsense.order;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,5 +25,32 @@ public interface OrderRepository
     findByOrderNumberAndUserId(
             String orderNumber,
             Long userId
+    );
+
+    Optional<CustomerOrder>
+    findByUserIdAndIdempotencyKey(
+            Long userId,
+            String idempotencyKey
+    );
+
+    @Query(
+            value = """
+                    SELECT pg_advisory_xact_lock(
+                        hashtextextended(
+                            CONCAT(
+                                CAST(:userId AS TEXT),
+                                ':',
+                                CAST(:idempotencyKey AS TEXT)
+                            ),
+                            0
+                        )
+                    )
+                    """,
+            nativeQuery = true
+    )
+    void acquireCheckoutIdempotencyLock(
+            @Param("userId") Long userId,
+            @Param("idempotencyKey")
+            String idempotencyKey
     );
 }
