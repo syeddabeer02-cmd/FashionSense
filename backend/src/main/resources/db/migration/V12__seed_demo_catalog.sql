@@ -15,6 +15,12 @@ INSERT INTO brands (
 )
 VALUES
     (
+        'Nike',
+        'nike',
+        'Sportswear, footwear and performance-inspired everyday fashion.',
+        TRUE
+    ),
+    (
         'Adidas',
         'adidas',
         'Sportswear, footwear and everyday active fashion.',
@@ -44,6 +50,39 @@ VALUES
         'Smart casual and office-focused apparel.',
         TRUE
     )
+ON CONFLICT (slug) DO NOTHING;
+
+
+-- ============================================================
+-- BASE MEN CATEGORY HIERARCHY
+-- ============================================================
+
+INSERT INTO categories (
+    name,
+    slug,
+    parent_id
+)
+VALUES (
+    'Men',
+    'men',
+    NULL
+)
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO categories (
+    name,
+    slug,
+    parent_id
+)
+VALUES (
+    'Clothing',
+    'mens-clothing',
+    (
+        SELECT id
+        FROM categories
+        WHERE slug = 'men'
+    )
+)
 ON CONFLICT (slug) DO NOTHING;
 
 
