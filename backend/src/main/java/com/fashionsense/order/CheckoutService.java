@@ -68,7 +68,6 @@ public class CheckoutService {
             ApplicationEventPublisher applicationEventPublisher,
             PromotionEngine promotionEngine
     ) {
-
         this.cartRepository =
                 cartRepository;
 
@@ -102,7 +101,6 @@ public class CheckoutService {
             Long userId,
             CheckoutRequest request
     ) {
-
         User user =
                 userRepository.findById(userId)
                         .orElseThrow(() ->
@@ -203,7 +201,6 @@ public class CheckoutService {
             if (lineDiscount.compareTo(
                     lineTotal
             ) > 0) {
-
                 lineDiscount =
                         lineTotal;
             }
@@ -278,9 +275,6 @@ public class CheckoutService {
                     subtotal;
         }
 
-        BigDecimal giftCardAmount =
-                ZERO;
-
         BigDecimal taxableSubtotal =
                 money(
                         subtotal.subtract(
@@ -311,7 +305,6 @@ public class CheckoutService {
                 taxableSubtotal
                         .add(shippingAmount)
                         .add(taxAmount)
-                        .subtract(giftCardAmount)
                         .setScale(
                                 2,
                                 RoundingMode.HALF_UP
@@ -352,10 +345,6 @@ public class CheckoutService {
 
         order.setDiscountAmount(
                 discountAmount
-        );
-
-        order.setGiftCardAmount(
-                giftCardAmount
         );
 
         order.setShippingAmount(
@@ -538,7 +527,6 @@ public class CheckoutService {
             BigDecimal subtotalAfterDiscounts,
             ShippingMethod shippingMethod
     ) {
-
         if (shippingMethod
                 == ShippingMethod.EXPRESS) {
 
@@ -559,7 +547,6 @@ public class CheckoutService {
     private BigDecimal getEffectivePrice(
             ProductVariant variant
     ) {
-
         BigDecimal price =
                 variant.getPrice() != null
                         ? variant.getPrice()
@@ -575,7 +562,6 @@ public class CheckoutService {
     private BigDecimal money(
             BigDecimal amount
     ) {
-
         return amount.setScale(
                 2,
                 RoundingMode.HALF_UP
@@ -586,7 +572,6 @@ public class CheckoutService {
             Address address,
             CustomerOrder order
     ) {
-
         order.setRecipientName(
                 address.getRecipientName()
         );
@@ -621,7 +606,6 @@ public class CheckoutService {
     }
 
     private String generateOrderNumber() {
-
         return "FS-"
                 + UUID.randomUUID()
                 .toString()

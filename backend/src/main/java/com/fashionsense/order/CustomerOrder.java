@@ -80,15 +80,6 @@ public class CustomerOrder {
             BigDecimal.ZERO;
 
     @Column(
-            name = "gift_card_amount",
-            nullable = false,
-            precision = 12,
-            scale = 2
-    )
-    private BigDecimal giftCardAmount =
-            BigDecimal.ZERO;
-
-    @Column(
             name = "shipping_amount",
             nullable = false,
             precision = 12,
@@ -273,16 +264,6 @@ public class CustomerOrder {
             BigDecimal discountAmount
     ) {
         this.discountAmount = discountAmount;
-    }
-
-    public BigDecimal getGiftCardAmount() {
-        return giftCardAmount;
-    }
-
-    public void setGiftCardAmount(
-            BigDecimal giftCardAmount
-    ) {
-        this.giftCardAmount = giftCardAmount;
     }
 
     public BigDecimal getShippingAmount() {

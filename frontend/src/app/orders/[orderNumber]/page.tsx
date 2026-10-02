@@ -481,19 +481,6 @@ export default function OrderDetailPage() {
 
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  Gift Card
-                </span>
-
-                <span>
-                  -$
-                  {formatMoney(
-                    order.giftCardAmount
-                  )}
-                </span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600">
                   Shipping
                 </span>
 

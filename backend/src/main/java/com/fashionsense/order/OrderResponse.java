@@ -14,7 +14,6 @@ public record OrderResponse(
 
         BigDecimal subtotal,
         BigDecimal discountAmount,
-        BigDecimal giftCardAmount,
         BigDecimal shippingAmount,
         BigDecimal taxAmount,
         BigDecimal totalAmount,
@@ -37,7 +36,6 @@ public record OrderResponse(
             CustomerOrder order,
             List<OrderItem> items
     ) {
-
         return new OrderResponse(
                 order.getId(),
                 order.getOrderNumber(),
@@ -48,7 +46,6 @@ public record OrderResponse(
 
                 order.getSubtotal(),
                 order.getDiscountAmount(),
-                order.getGiftCardAmount(),
                 order.getShippingAmount(),
                 order.getTaxAmount(),
                 order.getTotalAmount(),

@@ -40,7 +40,6 @@ export interface OrderResponse {
 
   subtotal: number;
   discountAmount: number;
-  giftCardAmount: number;
   shippingAmount: number;
   taxAmount: number;
   totalAmount: number;
