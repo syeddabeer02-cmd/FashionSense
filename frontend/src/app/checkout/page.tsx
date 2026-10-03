@@ -60,6 +60,12 @@ export default function CheckoutPage() {
       "CARD"
     );
 
+  const [
+    promotionCode,
+    setPromotionCode,
+  ] =
+    useState("");
+
   const [loading, setLoading] =
     useState(true);
 
@@ -340,6 +346,13 @@ export default function CheckoutPage() {
                 shippingMethod,
 
                 paymentMethod,
+
+                promotionCode:
+                  promotionCode.trim()
+                    ? promotionCode
+                        .trim()
+                        .toUpperCase()
+                    : null,
               }
             ),
           }
@@ -445,6 +458,25 @@ export default function CheckoutPage() {
                   "SUCCEEDED"}
               </span>
             </div>
+
+            {order.discountAmount !==
+              undefined &&
+              Number(
+                order.discountAmount
+              ) > 0 && (
+                <div className="flex justify-between py-2 text-green-700">
+                  <span>
+                    Discount
+                  </span>
+
+                  <span className="font-bold">
+                    -$
+                    {Number(
+                      order.discountAmount
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              )}
 
             {order.totalAmount !==
               undefined && (
@@ -719,6 +751,49 @@ export default function CheckoutPage() {
                   </button>
                 </div>
               </section>
+
+              {/* Promotion */}
+              <section className="rounded-2xl border border-gray-200 bg-white p-6">
+                <h2 className="text-xl font-bold">
+                  Promotion Code
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Enter a valid discount
+                  code to apply it during
+                  checkout.
+                </p>
+
+                <input
+                  type="text"
+                  value={
+                    promotionCode
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setPromotionCode(
+                      event.target.value.toUpperCase()
+                    )
+                  }
+                  placeholder="e.g. SAVE10"
+                  maxLength={50}
+                  autoComplete="off"
+                  className="mt-5 w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-pink-600"
+                />
+
+                {promotionCode && (
+                  <p className="mt-3 text-sm text-gray-500">
+                    Code{" "}
+                    <span className="font-bold text-gray-900">
+                      {promotionCode}
+                    </span>{" "}
+                    will be validated by
+                    the backend when you
+                    place the order.
+                  </p>
+                )}
+              </section>
             </div>
 
             {/* Summary */}
@@ -760,14 +835,35 @@ export default function CheckoutPage() {
                   </span>
                 </div>
 
+                {promotionCode && (
+                  <div className="flex justify-between text-green-700">
+                    <span>
+                      Promotion
+                    </span>
+
+                    <span className="font-semibold">
+                      {promotionCode}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-gray-500">
+                  <span>
+                    Discount
+                  </span>
+
+                  <span>
+                    Calculated by backend
+                  </span>
+                </div>
+
                 <div className="flex justify-between text-gray-500">
                   <span>
                     Tax
                   </span>
 
                   <span>
-                    Calculated by
-                    backend
+                    Calculated by backend
                   </span>
                 </div>
               </div>
