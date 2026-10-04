@@ -30,6 +30,6 @@ HEALTHCHECK \
     --timeout=5s \
     --start-period=30s \
     --retries=10 \
-    CMD wget -q -O /dev/null http://localhost:8080/api/products || exit 1
+    CMD wget -q -O /dev/null http://localhost:8080/actuator/health/readiness || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

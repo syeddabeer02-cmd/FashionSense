@@ -1,0 +1,25 @@
+# Docker Compose >= 2.24.4; run with the base compose.yaml.
+services:
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      FASHION_DOMAIN: ${FASHION_DOMAIN:?Set the public storefront hostname}
+      ACME_EMAIL: ${ACME_EMAIL:?Set your certificate contact email}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+  backend:
+    ports: !override ['127.0.0.1:18081:8080']
+  kafka:
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+volumes:
+  caddy_data:
+  caddy_config:
+  kafka_data:

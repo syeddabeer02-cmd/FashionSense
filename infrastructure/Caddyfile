@@ -1,0 +1,7 @@
+{
+    email {$ACME_EMAIL}
+}
+{$FASHION_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy frontend:3000
+}

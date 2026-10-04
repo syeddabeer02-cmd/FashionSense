@@ -60,7 +60,16 @@ jobs:
 
       - name: Run backend tests
         working-directory: backend
-        run: ./mvnw -B test
+        run: ./mvnw -B verify
+
+      - name: Upload backend test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-coverage
+          path: |
+            backend/target/site/jacoco/
+            backend/target/surefire-reports/
 
       - name: Show infrastructure logs on failure
         if: failure()
@@ -106,3 +115,49 @@ jobs:
 
       - name: Build Next.js production application
         run: npm run build
+  docker-stack:
+    name: Docker - Storefront and API
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: infrastructure
+    env:
+      POSTGRES_DB: fashionsense
+      POSTGRES_USER: fashionsense
+      POSTGRES_PASSWORD: ci_fashionsense_password
+      JWT_SECRET: ZmFzaGlvbi1zZW5zZS1jaS1qd3Qtc2VjcmV0LTIwMjYtMDEyMzQ1Njc4OWFiY2RlZg==
+      FASHION_DOMAIN: fashion.example.com
+      ACME_EMAIL: demo@example.com
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate hosted Compose and HTTPS configuration
+        run: |
+          docker compose -f compose.yaml -f compose.hosted.yaml config -q
+          docker run --rm -e FASHION_DOMAIN -e ACME_EMAIL -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+      - name: Build and start complete application
+        run: docker compose up --build -d --wait --wait-timeout 240 postgres redis kafka backend frontend
+      - name: Verify storefront and backend proxy
+        run: |
+          python - <<'PY'
+          from urllib.request import urlopen, Request
+          from urllib.error import HTTPError
+          with urlopen('http://localhost:8080/actuator/health/readiness') as response:
+              assert response.status == 200
+          with urlopen('http://localhost:3000/login') as response:
+              assert response.status == 200
+          request = Request('http://localhost:3000/api/auth/login', data=b'{}', headers={'Content-Type': 'application/json'})
+          try:
+              urlopen(request)
+          except HTTPError as error:
+              assert error.code == 400, error.code
+          else:
+              raise AssertionError('Invalid login should reach backend validation')
+          PY
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=100
+      - name: Stop CI application stack
+        if: always()
+        run: docker compose down -v

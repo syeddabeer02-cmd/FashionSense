@@ -1,140 +1,118 @@
-\# Fashion Sense Architecture
+# Fashion Sense Architecture
 
-
-
-\## 1. Overview
-
-
+## 1. Overview
 
 Fashion Sense is a full-stack ecommerce application designed to demonstrate production-oriented software architecture using:
 
+- Next.js
 
+- React
 
-\- Next.js
+- TypeScript
 
-\- React
+- Spring Boot
 
-\- TypeScript
+- PostgreSQL
 
-\- Spring Boot
+- Redis
 
-\- PostgreSQL
+- Apache Kafka
 
-\- Redis
+- Docker
 
-\- Apache Kafka
+- JWT authentication
 
-\- Docker
+- Role-based access control
 
-\- JWT authentication
+- Flyway
 
-\- Role-based access control
-
-\- Flyway
-
-\- GitHub Actions CI/CD
-
-
+- GitHub Actions CI/CD
 
 The architecture follows a layered design where the frontend handles presentation and browser interaction, Spring Boot handles business logic and security, PostgreSQL stores persistent data, Redis provides caching, and Kafka handles asynchronous events.
 
+---
 
-
-\---
-
-
-
-\# 2. High-Level Architecture
-
-
+# 2. High-Level Architecture
 
 ```text
 
-&#x20;                        +----------------------+
+                         +----------------------+
 
-&#x20;                        |       Browser        |
+                         |       Browser        |
 
-&#x20;                        +----------+-----------+
+                         +----------+-----------+
 
-&#x20;                                   |
+                                    |
 
-&#x20;                                   |
+                                    |
 
-&#x20;                             HTTP / HTTPS
+                              HTTP / HTTPS
 
-&#x20;                                   |
+                                    |
 
-&#x20;                                   v
+                                    v
 
-&#x20;                        +----------------------+
+                         +----------------------+
 
-&#x20;                        |       Next.js        |
+                         |       Next.js        |
 
-&#x20;                        | React + TypeScript   |
+                         | React + TypeScript   |
 
-&#x20;                        +----------+-----------+
+                         +----------+-----------+
 
-&#x20;                                   |
+                                    |
 
-&#x20;                                   |
+                                    |
 
-&#x20;                             REST / JSON
+                              REST / JSON
 
-&#x20;                                   |
+                                    |
 
-&#x20;                                   v
+                                    v
 
-&#x20;                        +----------------------+
+                         +----------------------+
 
-&#x20;                        |     Spring Boot      |
+                         |     Spring Boot      |
 
-&#x20;                        |     REST Backend     |
+                         |     REST Backend     |
 
-&#x20;                        +----------+-----------+
+                         +----------+-----------+
 
-&#x20;                                   |
+                                    |
 
-&#x20;            +----------------------+----------------------+
+             +----------------------+----------------------+
 
-&#x20;            |                      |                      |
+             |                      |                      |
 
-&#x20;            v                      v                      v
+             v                      v                      v
 
-&#x20;   +----------------+     +----------------+     +----------------+
+    +----------------+     +----------------+     +----------------+
 
-&#x20;   |   PostgreSQL   |     |     Redis      |     |     Kafka      |
+    |   PostgreSQL   |     |     Redis      |     |     Kafka      |
 
-&#x20;   | Persistent DB  |     |     Cache      |     | Event Broker   |
+    | Persistent DB  |     |     Cache      |     | Event Broker   |
 
-&#x20;   +----------------+     +----------------+     +--------+-------+
+    +----------------+     +----------------+     +--------+-------+
 
-&#x20;                                                          |
+                                                           |
 
-&#x20;                                                          v
+                                                           v
 
-&#x20;                                                 +----------------+
+                                                  +----------------+
 
-&#x20;                                                 | Kafka Consumer |
+                                                  | Kafka Consumer |
 
-&#x20;                                                 | Async Handling |
+                                                  | Async Handling |
 
-&#x20;                                                 +----------------+
+                                                  +----------------+
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 3. Frontend Architecture
-
-
+# 3. Frontend Architecture
 
 The frontend is implemented using:
-
-
 
 ```text
 
@@ -148,125 +126,93 @@ Tailwind CSS
 
 ```
 
-
-
 The frontend is responsible for:
 
+- rendering ecommerce pages
 
+- product browsing
 
-\- rendering ecommerce pages
+- category filtering
 
-\- product browsing
+- occasion filtering
 
-\- category filtering
+- authentication forms
 
-\- occasion filtering
+- cart interaction
 
-\- authentication forms
+- wishlist interaction
 
-\- cart interaction
+- checkout
 
-\- wishlist interaction
+- promotion entry
 
-\- checkout
+- order history
 
-\- promotion entry
-
-\- order history
-
-\- order details
-
-
+- order details
 
 The browser communicates with Next.js API routes.
 
-
-
 Next.js API routes then communicate with the Spring Boot backend.
-
-
 
 This creates an additional application boundary between browser code and backend APIs.
 
+---
 
-
-\---
-
-
-
-\# 4. Frontend Request Flow
-
-
+# 4. Frontend Request Flow
 
 Example checkout flow:
-
-
 
 ```text
 
 Browser
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Next.js Checkout Page
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Next.js /api/checkout
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Spring Boot
 
 /api/customers/me/checkout
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 CheckoutService
 
-&#x20;  |
+   |
 
-&#x20;  +----> PostgreSQL
+   +----> PostgreSQL
 
-&#x20;  |
+   |
 
-&#x20;  +----> Kafka
+   +----> Kafka
 
 ```
 
-
-
 The frontend does not directly modify the database.
-
-
 
 All important business rules remain inside the backend.
 
+---
 
-
-\---
-
-
-
-\# 5. Backend Architecture
-
-
+# 5. Backend Architecture
 
 The backend is implemented using Spring Boot.
 
-
-
 The application package root is:
-
-
 
 ```text
 
@@ -274,57 +220,41 @@ com.fashionsense
 
 ```
 
-
-
 The backend follows a layered structure similar to:
-
-
 
 ```text
 
 Controller
 
-&#x20;   |
+    |
 
-&#x20;   v
+    v
 
 Service
 
-&#x20;   |
+    |
 
-&#x20;   v
+    v
 
 Repository
 
-&#x20;   |
+    |
 
-&#x20;   v
+    v
 
 Database
 
 ```
 
-
-
 Responsibilities are separated between layers.
 
+---
 
-
-\---
-
-
-
-\# 6. Controller Layer
-
-
+# 6. Controller Layer
 
 Controllers expose REST APIs.
 
-
-
 Examples include:
-
-
 
 ```text
 
@@ -346,47 +276,31 @@ AddressController
 
 ```
 
-
-
 Controllers are responsible for:
 
+- receiving HTTP requests
 
+- reading path parameters
 
-\- receiving HTTP requests
+- reading query parameters
 
-\- reading path parameters
+- reading request bodies
 
-\- reading query parameters
+- validating request structures
 
-\- reading request bodies
+- extracting authentication information
 
-\- validating request structures
-
-\- extracting authentication information
-
-\- returning HTTP responses
-
-
+- returning HTTP responses
 
 Controllers should not contain the core business logic.
 
+---
 
-
-\---
-
-
-
-\# 7. Service Layer
-
-
+# 7. Service Layer
 
 The service layer contains business rules.
 
-
-
 Examples include:
-
-
 
 ```text
 
@@ -404,105 +318,73 @@ OrderService
 
 ```
 
-
-
 Responsibilities include:
 
+- validating business rules
 
+- coordinating repositories
 
-\- validating business rules
+- calculating totals
 
-\- coordinating repositories
+- checking stock
 
-\- calculating totals
+- applying promotions
 
-\- checking stock
+- creating orders
 
-\- applying promotions
+- generating tokens
 
-\- creating orders
+- publishing events
 
-\- generating tokens
-
-\- publishing events
-
-\- controlling transactions
-
-
+- controlling transactions
 
 The service layer is the main business-logic layer.
 
+---
 
-
-\---
-
-
-
-\# 8. Repository Layer
-
-
+# 8. Repository Layer
 
 Spring Data JPA repositories handle database access.
 
-
-
 Repositories abstract SQL operations behind Java interfaces.
 
-
-
 Typical flow:
-
-
 
 ```text
 
 Service
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Repository
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Hibernate / JPA
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 PostgreSQL
 
 ```
 
-
-
 This avoids writing repetitive database-access code for standard operations.
-
-
 
 Custom queries are used where more specialized behavior is required.
 
+---
 
-
-\---
-
-
-
-\# 9. PostgreSQL Architecture
-
-
+# 9. PostgreSQL Architecture
 
 PostgreSQL is the system of record.
 
-
-
 Important tables include:
-
-
 
 ```text
 
@@ -518,187 +400,143 @@ occasions
 
 products
 
-product\_variants
+product_variants
 
-product\_images
+product_images
 
-product\_occasions
+product_occasions
 
 carts
 
-cart\_items
+cart_items
 
-wishlist\_items
+wishlist_items
 
 promotions
 
 orders
 
-order\_items
+order_items
 
-email\_verification\_tokens
+email_verification_tokens
 
-flyway\_schema\_history
+flyway_schema_history
 
 ```
 
-
-
 PostgreSQL stores persistent ecommerce state.
 
+---
 
-
-\---
-
-
-
-\# 10. Database Relationships
-
-
+# 10. Database Relationships
 
 Important relationships include:
-
-
 
 ```text
 
 User
 
-&#x20;|
+ |
 
-&#x20;+---- Addresses
+ +---- Addresses
 
-&#x20;|
+ |
 
-&#x20;+---- Cart
+ +---- Cart
 
-&#x20;|       |
+ |       |
 
-&#x20;|       +---- Cart Items
+ |       +---- Cart Items
 
-&#x20;|
+ |
 
-&#x20;+---- Wishlist Items
+ +---- Wishlist Items
 
-&#x20;|
+ |
 
-&#x20;+---- Orders
+ +---- Orders
 
-&#x20;        |
+         |
 
-&#x20;        +---- Order Items
+         +---- Order Items
 
 ```
 
-
-
 Catalog relationships include:
-
-
 
 ```text
 
 Brand
 
-&#x20; |
+  |
 
-&#x20; +---- Products
-
-
+  +---- Products
 
 Category
 
-&#x20; |
+  |
 
-&#x20; +---- Products
-
-
+  +---- Products
 
 Product
 
-&#x20; |
+  |
 
-&#x20; +---- Variants
+  +---- Variants
 
-&#x20; |
+  |
 
-&#x20; +---- Images
+  +---- Images
 
-&#x20; |
+  |
 
-&#x20; +---- Occasions
+  +---- Occasions
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 11. Database Constraints
-
-
+# 11. Database Constraints
 
 The database protects important invariants.
 
-
-
 Examples include:
 
+- unique user email
 
+- unique product slug
 
-\- unique user email
+- unique promotion code
 
-\- unique product slug
+- non-negative inventory
 
-\- unique promotion code
+- valid user roles
 
-\- non-negative inventory
+- valid account statuses
 
-\- valid user roles
+- valid promotion types
 
-\- valid account statuses
+- valid promotion scopes
 
-\- valid promotion types
-
-\- valid promotion scopes
-
-\- unique checkout idempotency keys per user
-
-
+- unique checkout idempotency keys per user
 
 Example inventory rule:
 
-
-
 ```text
 
-stock\_quantity >= 0
+stock_quantity >= 0
 
 ```
 
-
-
 Database constraints provide a final layer of protection even if application logic fails.
 
+---
 
-
-\---
-
-
-
-\# 12. Flyway Migration Architecture
-
-
+# 12. Flyway Migration Architecture
 
 Database schema changes are versioned with Flyway.
 
-
-
 Migration location:
-
-
 
 ```text
 
@@ -706,11 +544,7 @@ backend/src/main/resources/db/migration
 
 ```
 
-
-
 Migrations are applied sequentially:
-
-
 
 ```text
 
@@ -726,66 +560,50 @@ V13
 
 ```
 
-
-
 Flyway provides:
 
+- schema versioning
 
+- reproducible database setup
 
-\- schema versioning
+- ordered migrations
 
-\- reproducible database setup
+- migration history
 
-\- ordered migrations
-
-\- migration history
-
-\- checksum validation
-
-
+- checksum validation
 
 This prevents developers from manually changing databases without tracking those changes.
 
+---
 
-
-\---
-
-
-
-\# 13. Authentication Architecture
-
-
+# 13. Authentication Architecture
 
 Fashion Sense uses JWT-based stateless authentication.
 
-
-
 Authentication flow:
-
-
 
 ```text
 
 User
 
-&#x20;|
+ |
 
-&#x20;v
+ v
 
 POST /api/auth/login
 
-&#x20;|
+ |
 
-&#x20;v
+ v
 
 AuthService
 
-&#x20;|
+ |
 
-&#x20;+---- Verify password using BCrypt
+ +---- Verify password using BCrypt
 
-&#x20;|
+ |
 
-&#x20;v
+ v
 
 Jwt

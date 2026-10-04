@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -39,6 +40,10 @@ public class SecurityConfig {
                 Base64.getDecoder()
                         .decode(encodedSecret);
 
+        if (keyBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret must decode to at least 32 bytes");
+        }
+
         return new SecretKeySpec(
                 keyBytes,
                 "HmacSHA256"
@@ -61,10 +66,12 @@ public class SecurityConfig {
             SecretKey secretKey
     ) {
 
-        return NimbusJwtDecoder
+        NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer("fashionsense"));
+        return decoder;
     }
 
     @Bean

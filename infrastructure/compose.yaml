@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
     volumes:
       - fashionsense_postgres_data:/var/lib/postgresql/data
@@ -33,7 +33,7 @@ services:
     container_name: fashionsense-redis
 
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
     command:
       - redis-server
@@ -57,7 +57,7 @@ services:
     container_name: fashionsense-kafka
 
     ports:
-      - "9092:9092"
+      - "127.0.0.1:9092:9092"
 
     environment:
       KAFKA_NODE_ID: 1
@@ -125,9 +125,16 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:19092
 
       JWT_SECRET: ${JWT_SECRET}
+      S3_IMAGES_ENABLED: ${S3_IMAGES_ENABLED:-false}
+      S3_IMAGES_BUCKET: ${S3_IMAGES_BUCKET:-}
+      S3_IMAGES_PUBLIC_BASE_URL: ${S3_IMAGES_PUBLIC_BASE_URL:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
 
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
     depends_on:
       postgres:
@@ -149,10 +156,14 @@ services:
     container_name: fashionsense-frontend
 
     environment:
-      BACKEND_API_BASE_URL: http://host.docker.internal:8080
+      BACKEND_API_BASE_URL: http://backend:8080
+
+    depends_on:
+      backend:
+        condition: service_healthy
 
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
     restart: unless-stopped
 

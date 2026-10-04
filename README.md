@@ -1,114 +1,82 @@
-\# Fashion Sense
-
-
+# Fashion Sense
 
 Fashion Sense is a full-stack ecommerce platform inspired by modern retail applications such as Myntra and Amazon.
 
-
-
-The project demonstrates the design and implementation of a production-oriented ecommerce system using \*\*Spring Boot, Next.js, PostgreSQL, Redis, Apache Kafka, Docker, JWT authentication, role-based access control, automated testing, and GitHub Actions CI/CD\*\*.
-
-
+The project demonstrates the design and implementation of a production-oriented ecommerce system using **Spring Boot, Next.js, PostgreSQL, Redis, Apache Kafka, Docker, JWT authentication, role-based access control, automated testing, and GitHub Actions CI/CD**.
 
 The application supports product discovery, category and occasion-based filtering, cart and wishlist management, promotions, checkout, order processing, inventory management, event-driven order processing, and secure customer/admin APIs.
 
+---
 
+## Features
 
-\---
+### Product Catalog
 
+- Browse products without authentication
 
+- Product detail pages
 
-\## Features
+- Brand-based organization
 
+- Hierarchical categories
 
+- Occasion-based product discovery
 
-\### Product Catalog
+- Filtering by:
 
+  - Category
 
+  - Occasion
 
-\- Browse products without authentication
+  - Brand
 
-\- Product detail pages
+  - Price
 
-\- Brand-based organization
+  - Size
 
-\- Hierarchical categories
+  - Color
 
-\- Occasion-based product discovery
+  - Style
 
-\- Filtering by:
+  - Material
 
-&#x20; - Category
+- Pagination and sorting
 
-&#x20; - Occasion
+- Product variants
 
-&#x20; - Brand
+- Product images
 
-&#x20; - Price
-
-&#x20; - Size
-
-&#x20; - Color
-
-&#x20; - Style
-
-&#x20; - Material
-
-\- Pagination and sorting
-
-\- Product variants
-
-\- Product images
-
-\- Availability-aware variant selection
-
-
+- Availability-aware variant selection
 
 Customers are intentionally not shown exact remaining inventory quantities.
 
-
-
 The storefront only exposes availability information such as whether a product variant is available or out of stock.
 
+---
 
-
-\---
-
-
-
-\## Authentication and Security
-
-
+## Authentication and Security
 
 Fashion Sense implements stateless JWT authentication using Spring Security.
 
-
-
 Features include:
 
+- Customer registration
 
+- Login
 
-\- Customer registration
+- Email verification workflow
 
-\- Login
+- JWT access tokens
 
-\- Email verification workflow
+- BCrypt password hashing
 
-\- JWT access tokens
+- Stateless authentication
 
-\- BCrypt password hashing
+- Role-based access control
 
-\- Stateless authentication
-
-\- Role-based access control
-
-\- Customer and admin roles
-
-
+- Customer and admin roles
 
 Supported roles:
-
-
 
 ```text
 
@@ -118,11 +86,7 @@ ADMIN
 
 ```
 
-
-
 Admin endpoints are protected using Spring Security authorization rules and method-level authorization with:
-
-
 
 ```java
 
@@ -130,11 +94,7 @@ Admin endpoints are protected using Spring Security authorization rules and meth
 
 ```
 
-
-
 The JWT contains claims such as:
-
-
 
 ```text
 
@@ -150,93 +110,59 @@ expiresAt
 
 ```
 
+---
 
-
-\---
-
-
-
-\## Shopping Cart
-
-
+## Shopping Cart
 
 Authenticated customers can:
 
+- Add products to cart
 
+- Change item quantities
 
-\- Add products to cart
+- Remove items
 
-\- Change item quantities
+- View cart subtotal
 
-\- Remove items
-
-\- View cart subtotal
-
-\- Maintain cart state between requests
-
-
+- Maintain cart state between requests
 
 Inventory availability is validated before checkout.
 
+---
 
-
-\---
-
-
-
-\## Wishlist
-
-
+## Wishlist
 
 Customers can:
 
+- Add products to their wishlist
 
+- View saved products
 
-\- Add products to their wishlist
+- Remove products
 
-\- View saved products
-
-\- Remove products
-
-\- Persist wishlist data in PostgreSQL
-
-
+- Persist wishlist data in PostgreSQL
 
 Duplicate wishlist entries are prevented by the application/database design.
 
+---
 
-
-\---
-
-
-
-\## Promotions and Discounts
-
-
+## Promotions and Discounts
 
 Fashion Sense supports a flexible promotion system.
 
-
-
 Supported promotion types include:
-
-
 
 ```text
 
 PERCENTAGE
 
-FIXED\_AMOUNT
+FIXED_AMOUNT
 
-BUY\_X\_GET\_Y
+BUY_X_GET_Y
 
 ```
 
-
-
 Promotions can operate at:
-
-
 
 ```text
 
@@ -246,11 +172,7 @@ CART
 
 ```
 
-
-
 Example seeded cart promotion:
-
-
 
 ```text
 
@@ -258,67 +180,45 @@ SAVE10
 
 ```
 
-
-
 which applies a 10% cart discount.
-
-
 
 The checkout frontend allows customers to submit promotion codes while the backend remains the authoritative source for promotion validation and pricing calculations.
 
+---
 
-
-\---
-
-
-
-\## Checkout
-
-
+## Checkout
 
 Checkout supports:
 
+- Saved shipping addresses
 
+- Standard shipping
 
-\- Saved shipping addresses
+- Express shipping
 
-\- Standard shipping
+- Simulated card payments
 
-\- Express shipping
+- Simulated PayPal payments
 
-\- Simulated card payments
+- Promotion codes
 
-\- Simulated PayPal payments
+- Tax calculation
 
-\- Promotion codes
+- Shipping calculation
 
-\- Tax calculation
+- Order creation
 
-\- Shipping calculation
+- Inventory decrement
 
-\- Order creation
-
-\- Inventory decrement
-
-\- Order event publishing
-
-
+- Order event publishing
 
 Payment integration is simulated because this project focuses on ecommerce system architecture rather than connecting to a real payment provider.
 
+---
 
-
-\---
-
-
-
-\## Checkout Idempotency
-
-
+## Checkout Idempotency
 
 Checkout requests require an:
-
-
 
 ```text
 
@@ -326,57 +226,35 @@ Idempotency-Key
 
 ```
 
-
-
 This prevents duplicate orders when the same checkout request is retried because of:
 
+- network retries
 
+- duplicate browser requests
 
-\- network retries
+- frontend retries
 
-\- duplicate browser requests
-
-\- frontend retries
-
-\- temporary client/server communication failures
-
-
+- temporary client/server communication failures
 
 The system protects idempotency at both the application and database layers.
 
-
-
 The database contains a unique constraint based on:
-
-
 
 ```text
 
-user\_id + idempotency\_key
+user_id + idempotency_key
 
 ```
 
-
-
 This ensures the same customer cannot create multiple orders using the same checkout idempotency key.
 
+---
 
-
-\---
-
-
-
-\## Inventory Management
-
-
+## Inventory Management
 
 Product inventory is maintained at the variant level.
 
-
-
 Each variant contains information such as:
-
-
 
 ```text
 
@@ -398,103 +276,69 @@ availability
 
 ```
 
-
-
 Checkout performs protected inventory updates so concurrent orders cannot reduce stock below zero.
-
-
 
 Database constraints also enforce:
 
-
-
 ```text
 
-stock\_quantity >= 0
+stock_quantity >= 0
 
 ```
 
-
-
 Customers do not receive the exact stock count.
-
-
 
 Admin APIs can access detailed inventory information.
 
+---
 
-
-\---
-
-
-
-\## Order Management
-
-
+## Order Management
 
 Customers can:
 
+- Place orders
 
+- View order history
 
-\- Place orders
-
-\- View order history
-
-\- View individual order details
-
-
+- View individual order details
 
 Order records contain:
 
+- Order number
 
+- Customer
 
-\- Order number
+- Shipping method
 
-\- Customer
+- Payment method
 
-\- Shipping method
+- Payment status
 
-\- Payment method
+- Subtotal
 
-\- Payment status
+- Discount
 
-\- Subtotal
+- Shipping amount
 
-\- Discount
+- Tax
 
-\- Shipping amount
+- Final total
 
-\- Tax
+- Shipping address snapshot
 
-\- Final total
+- Order items
 
-\- Shipping address snapshot
-
-\- Order items
-
-\- Creation timestamp
-
-
+- Creation timestamp
 
 Shipping address information is copied into the order so historical orders remain accurate even if the customer later changes their saved address.
 
+---
 
-
-\---
-
-
-
-\## Event-Driven Architecture with Kafka
-
-
+## Event-Driven Architecture with Kafka
 
 Fashion Sense uses Apache Kafka for asynchronous order events.
 
-
-
 After checkout succeeds, the backend publishes an:
-
-
 
 ```text
 
@@ -502,107 +346,79 @@ order-confirmed
 
 ```
 
-
-
 event.
-
-
 
 A Kafka consumer processes the event asynchronously.
 
-
-
 This demonstrates separation between synchronous transaction processing and asynchronous downstream processing.
 
-
-
 Current Kafka flow:
-
-
 
 ```text
 
 Checkout
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Order Created
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Kafka Producer
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 order-confirmed topic
 
-&#x20;  |
+   |
 
-&#x20;  v
+   v
 
 Kafka Consumer
 
 ```
 
-
-
 This architecture could later support services such as:
 
+- email notifications
 
+- analytics
 
-\- email notifications
+- recommendations
 
-\- analytics
+- fulfillment
 
-\- recommendations
+- fraud detection
 
-\- fulfillment
+- loyalty systems
 
-\- fraud detection
+---
 
-\- loyalty systems
-
-
-
-\---
-
-
-
-\## Redis Caching
-
-
+## Redis Caching
 
 Redis is used through Spring Cache.
 
-
-
 Product detail responses are cached using:
-
-
 
 ```java
 
 @Cacheable(
 
-&#x20;   cacheNames = "productDetails",
+    cacheNames = "productDetails",
 
-&#x20;   key = "#slug"
+    key = "#slug"
 
 )
 
 ```
 
-
-
 The current cache configuration uses:
-
-
 
 ```text
 
@@ -614,31 +430,17 @@ Null caching: disabled
 
 ```
 
-
-
 Product-related write operations evict the associated cached product after the database transaction commits.
-
-
 
 This reduces repeated database work for frequently accessed product pages.
 
+---
 
-
-\---
-
-
-
-\## PostgreSQL
-
-
+## PostgreSQL
 
 PostgreSQL is the primary persistent datastore.
 
-
-
 Major tables include:
-
-
 
 ```text
 
@@ -654,51 +456,39 @@ occasions
 
 products
 
-product\_variants
+product_variants
 
-product\_images
+product_images
 
-product\_occasions
+product_occasions
 
 carts
 
-cart\_items
+cart_items
 
-wishlist\_items
+wishlist_items
 
 promotions
 
 orders
 
-order\_items
+order_items
 
-email\_verification\_tokens
+email_verification_tokens
 
-flyway\_schema\_history
+flyway_schema_history
 
 ```
 
-
-
 Relational constraints are used to protect data integrity.
 
+---
 
-
-\---
-
-
-
-\## Flyway Database Migrations
-
-
+## Flyway Database Migrations
 
 Fashion Sense uses Flyway for database versioning.
 
-
-
 Migration files are stored under:
-
-
 
 ```text
 
@@ -706,15 +496,9 @@ backend/src/main/resources/db/migration
 
 ```
 
-
-
 Flyway automatically validates and applies database schema migrations when the backend starts.
 
-
-
 The project currently contains migrations through version:
-
-
 
 ```text
 
@@ -722,61 +506,47 @@ V13
 
 ```
 
-
-
 This provides deterministic database evolution across environments.
 
+---
 
-
-\---
-
-
-
-\## Backend
-
-
+## Backend
 
 Backend technologies:
 
+- Java 26
 
+- Spring Boot
 
-\- Java 26
+- Spring Web
 
-\- Spring Boot
+- Spring Data JPA
 
-\- Spring Web
+- Hibernate
 
-\- Spring Data JPA
+- Spring Security
 
-\- Hibernate
+- Spring OAuth2 Resource Server
 
-\- Spring Security
+- JWT
 
-\- Spring OAuth2 Resource Server
+- PostgreSQL
 
-\- JWT
+- Flyway
 
-\- PostgreSQL
+- Redis
 
-\- Flyway
+- Spring Cache
 
-\- Redis
+- Apache Kafka
 
-\- Spring Cache
+- Spring Boot Actuator
 
-\- Apache Kafka
+- Springdoc OpenAPI
 
-\- Spring Boot Actuator
-
-\- Springdoc OpenAPI
-
-\- Maven
-
-
+- Maven
 
 Backend package root:
-
-
 
 ```text
 
@@ -784,81 +554,57 @@ com.fashionsense
 
 ```
 
+---
 
-
-\---
-
-
-
-\## Frontend
-
-
+## Frontend
 
 Frontend technologies:
 
+- Next.js 16
 
+- React
 
-\- Next.js 16
+- TypeScript
 
-\- React
-
-\- TypeScript
-
-\- Tailwind CSS
-
-
+- Tailwind CSS
 
 Major pages include:
-
-
 
 ```text
 
 /
 
-&#x20;/login
+ /login
 
-&#x20;/register
+ /register
 
-&#x20;/verify-email
+ /verify-email
 
-&#x20;/profile
+ /profile
 
-&#x20;/products/\[slug]
+ /products/[slug]
 
-&#x20;/cart
+ /cart
 
-&#x20;/wishlist
+ /wishlist
 
-&#x20;/checkout
+ /checkout
 
-&#x20;/orders
+ /orders
 
-&#x20;/orders/\[orderNumber]
+ /orders/[orderNumber]
 
 ```
 
-
-
 Next.js API routes act as a frontend-facing API layer between the browser and Spring Boot backend.
 
+---
 
-
-\---
-
-
-
-\## API Documentation
-
-
+## API Documentation
 
 Fashion Sense exposes OpenAPI documentation.
 
-
-
 OpenAPI JSON:
-
-
 
 ```text
 
@@ -866,11 +612,7 @@ http://localhost:8080/v3/api-docs
 
 ```
 
-
-
 Swagger UI:
-
-
 
 ```text
 
@@ -878,59 +620,43 @@ http://localhost:8080/swagger-ui/index.html
 
 ```
 
-
-
 Swagger documents APIs for:
 
+- authentication
 
+- customers
 
-\- authentication
+- addresses
 
-\- customers
+- products
 
-\- addresses
+- brands
 
-\- products
+- categories
 
-\- brands
+- occasions
 
-\- categories
+- variants
 
-\- occasions
+- images
 
-\- variants
+- wishlist
 
-\- images
+- cart
 
-\- wishlist
+- checkout
 
-\- cart
-
-\- checkout
-
-\- orders
-
-
+- orders
 
 JWT-secured operations support Bearer authentication.
 
+---
 
-
-\---
-
-
-
-\## Health Checks and Observability
-
-
+## Health Checks and Observability
 
 Spring Boot Actuator provides application health endpoints.
 
-
-
 Available endpoints include:
-
-
 
 ```text
 
@@ -942,39 +668,25 @@ Available endpoints include:
 
 ```
 
-
-
 These endpoints can be used by:
 
+- Docker health checks
 
+- load balancers
 
-\- Docker health checks
+- Kubernetes probes
 
-\- load balancers
+- deployment platforms
 
-\- Kubernetes probes
+- monitoring systems
 
-\- deployment platforms
+---
 
-\- monitoring systems
-
-
-
-\---
-
-
-
-\## Docker Infrastructure
-
-
+## Docker Infrastructure
 
 Local infrastructure is managed using Docker Compose.
 
-
-
 Services include:
-
-
 
 ```text
 
@@ -988,11 +700,7 @@ Frontend
 
 ```
 
-
-
 Typical infrastructure directory:
-
-
 
 ```text
 
@@ -1000,11 +708,7 @@ infrastructure/
 
 ```
 
-
-
 Start infrastructure with:
-
-
 
 ```bash
 
@@ -1014,11 +718,7 @@ docker compose up -d
 
 ```
 
-
-
 Check service status:
-
-
 
 ```bash
 
@@ -1026,11 +726,7 @@ docker compose ps
 
 ```
 
-
-
 Stop services:
-
-
 
 ```bash
 
@@ -1038,43 +734,27 @@ docker compose down
 
 ```
 
+---
 
+## Local Development
 
-\---
-
-
-
-\## Local Development
-
-
-
-\### Prerequisites
-
-
+### Prerequisites
 
 Install:
 
+- Java 26
 
+- Node.js 24+
 
-\- Java 26
+- npm
 
-\- Node.js 24+
+- Git
 
-\- npm
+- Docker Desktop
 
-\- Git
+---
 
-\- Docker Desktop
-
-
-
-\---
-
-
-
-\### Clone the Repository
-
-
+### Clone the Repository
 
 ```bash
 
@@ -1084,19 +764,11 @@ cd FashionSense
 
 ```
 
+---
 
-
-\---
-
-
-
-\### Environment Variables
-
-
+### Environment Variables
 
 Create:
-
-
 
 ```text
 
@@ -1104,41 +776,25 @@ infrastructure/.env
 
 ```
 
-
-
 based on your environment configuration.
-
-
 
 Important secrets include values such as:
 
-
-
 ```text
 
-POSTGRES\_PASSWORD
+POSTGRES_PASSWORD
 
-JWT\_SECRET
+JWT_SECRET
 
 ```
 
-
-
 Do not commit `.env` files or secrets to Git.
-
-
 
 The project `.gitignore` prevents environment files from being committed.
 
+---
 
-
-\---
-
-
-
-\### Start Infrastructure
-
-
+### Start Infrastructure
 
 ```bash
 
@@ -1148,11 +804,7 @@ docker compose up -d
 
 ```
 
-
-
 Verify:
-
-
 
 ```bash
 
@@ -1160,43 +812,25 @@ docker compose ps
 
 ```
 
+---
 
-
-\---
-
-
-
-\### Start Backend
-
-
+### Start Backend
 
 From the project root in PowerShell:
 
-
-
 ```powershell
 
-$env:POSTGRES\_PASSWORD = ((Get-Content .\\infrastructure\\.env | Where-Object { $\_ -match '^POSTGRES\_PASSWORD=' }) -replace '^POSTGRES\_PASSWORD=','')
+$env:POSTGRES_PASSWORD = ((Get-Content .\infrastructure\.env | Where-Object { $_ -match '^POSTGRES_PASSWORD=' }) -replace '^POSTGRES_PASSWORD=','')
 
+$env:JWT_SECRET = ((Get-Content .\infrastructure\.env | Where-Object { $_ -match '^JWT_SECRET=' }) -replace '^JWT_SECRET=','')
 
+cd .\backend
 
-$env:JWT\_SECRET = ((Get-Content .\\infrastructure\\.env | Where-Object { $\_ -match '^JWT\_SECRET=' }) -replace '^JWT\_SECRET=','')
-
-
-
-cd .\\backend
-
-
-
-.\\mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run
 
 ```
 
-
-
 Backend:
-
-
 
 ```text
 
@@ -1204,15 +838,9 @@ http://localhost:8080
 
 ```
 
+---
 
-
-\---
-
-
-
-\### Start Frontend
-
-
+### Start Frontend
 
 ```bash
 
@@ -1224,11 +852,7 @@ npm run dev
 
 ```
 
-
-
 Frontend:
-
-
 
 ```text
 
@@ -1236,11 +860,7 @@ http://localhost:3000
 
 ```
 
-
-
 If port 3000 is already occupied, Next.js may automatically select another port such as:
-
-
 
 ```text
 
@@ -1248,33 +868,21 @@ http://localhost:3001
 
 ```
 
+---
 
+## Testing
 
-\---
-
-
-
-\## Testing
-
-
-
-\### Backend Tests
-
-
+### Backend Tests
 
 ```powershell
 
 cd backend
 
-.\\mvnw.cmd test
+.\mvnw.cmd test
 
 ```
 
-
-
 Current verified test result:
-
-
 
 ```text
 
@@ -1286,21 +894,13 @@ Errors: 0
 
 Skipped: 0
 
-
-
 BUILD SUCCESS
 
 ```
 
+---
 
-
-\---
-
-
-
-\### Frontend Lint
-
-
+### Frontend Lint
 
 ```bash
 
@@ -1310,15 +910,9 @@ npm run lint
 
 ```
 
+---
 
-
-\---
-
-
-
-\### Frontend Production Build
-
-
+### Frontend Production Build
 
 ```bash
 
@@ -1326,27 +920,15 @@ npm run build
 
 ```
 
-
-
 The current production build successfully generates all application routes and pages.
 
+---
 
-
-\---
-
-
-
-\## CI/CD
-
-
+## CI/CD
 
 Fashion Sense uses GitHub Actions.
 
-
-
 Workflow:
-
-
 
 ```text
 
@@ -1354,59 +936,41 @@ Workflow:
 
 ```
 
-
-
 The CI pipeline validates both the frontend and backend.
 
-
-
-\### Frontend CI
-
-
+### Frontend CI
 
 The pipeline:
 
+1. Checks out the repository
 
+2. Configures Node.js
 
-1\. Checks out the repository
+3. Installs dependencies
 
-2\. Configures Node.js
+4. Runs ESLint
 
-3\. Installs dependencies
+5. Builds the Next.js production application
 
-4\. Runs ESLint
-
-5\. Builds the Next.js production application
-
-
-
-\### Backend CI
-
-
+### Backend CI
 
 The pipeline:
 
+1. Checks out the repository
 
+2. Configures Java
 
-1\. Checks out the repository
+3. Starts PostgreSQL
 
-2\. Configures Java
+4. Starts Redis
 
-3\. Starts PostgreSQL
+5. Starts Kafka
 
-4\. Starts Redis
+6. Runs backend tests
 
-5\. Starts Kafka
-
-6\. Runs backend tests
-
-7\. Shuts down infrastructure
-
-
+7. Shuts down infrastructure
 
 Latest validated CI run:
-
-
 
 ```text
 
@@ -1418,203 +982,147 @@ Backend - Test: SUCCESS
 
 ```
 
+---
 
-
-\---
-
-
-
-\## Architecture Overview
-
-
+## Architecture Overview
 
 ```text
 
-&#x20;                        +----------------------+
+                         +----------------------+
 
-&#x20;                        |       Browser        |
+                         |       Browser        |
 
-&#x20;                        +----------+-----------+
+                         +----------+-----------+
 
-&#x20;                                   |
+                                    |
 
-&#x20;                                   v
+                                    v
 
-&#x20;                        +----------------------+
+                         +----------------------+
 
-&#x20;                        |       Next.js        |
+                         |       Next.js        |
 
-&#x20;                        | React + TypeScript   |
+                         | React + TypeScript   |
 
-&#x20;                        +----------+-----------+
+                         +----------+-----------+
 
-&#x20;                                   |
+                                    |
 
-&#x20;                             REST / JSON
+                              REST / JSON
 
-&#x20;                                   |
+                                    |
 
-&#x20;                                   v
+                                    v
 
-&#x20;                        +----------------------+
+                         +----------------------+
 
-&#x20;                        |     Spring Boot      |
+                         |     Spring Boot      |
 
-&#x20;                        |       Backend        |
+                         |       Backend        |
 
-&#x20;                        +---+---------+--------+
+                         +---+---------+--------+
 
-&#x20;                            |         |
+                             |         |
 
-&#x20;                +-----------+         +-----------+
+                 +-----------+         +-----------+
 
-&#x20;                |                                 |
+                 |                                 |
 
-&#x20;                v                                 v
+                 v                                 v
 
-&#x20;       +------------------+              +------------------+
+        +------------------+              +------------------+
 
-&#x20;       |    PostgreSQL    |              |      Redis       |
+        |    PostgreSQL    |              |      Redis       |
 
-&#x20;       | Persistent Data  |              | Product Cache    |
+        | Persistent Data  |              | Product Cache    |
 
-&#x20;       +------------------+              +------------------+
+        +------------------+              +------------------+
 
-&#x20;                |
+                 |
 
-&#x20;                |
+                 |
 
-&#x20;                +----------------+
+                 +----------------+
 
-&#x20;                                 |
+                                  |
 
-&#x20;                                 v
+                                  v
 
-&#x20;                        +------------------+
+                         +------------------+
 
-&#x20;                        |      Kafka       |
+                         |      Kafka       |
 
-&#x20;                        |  Order Events    |
+                         |  Order Events    |
 
-&#x20;                        +--------+---------+
+                         +--------+---------+
 
-&#x20;                                 |
+                                  |
 
-&#x20;                                 v
+                                  v
 
-&#x20;                        +------------------+
+                         +------------------+
 
-&#x20;                        | Kafka Consumer   |
+                         | Kafka Consumer   |
 
-&#x20;                        | Async Processing |
+                         | Async Processing |
 
-&#x20;                        +------------------+
+                         +------------------+
 
 ```
 
+---
 
-
-\---
-
-
-
-\## System Design Concepts Demonstrated
-
-
+## System Design Concepts Demonstrated
 
 Fashion Sense intentionally incorporates several production system-design concepts.
 
-
-
-\### Stateless Authentication
-
-
+### Stateless Authentication
 
 JWT authentication allows backend instances to validate requests without storing HTTP sessions.
 
-
-
-\### Caching
-
-
+### Caching
 
 Redis reduces repeated database access for frequently requested product details.
 
-
-
-\### Event-Driven Processing
-
-
+### Event-Driven Processing
 
 Kafka decouples order creation from downstream asynchronous processing.
 
-
-
-\### Database Constraints
-
-
+### Database Constraints
 
 PostgreSQL constraints protect critical invariants such as:
 
+- unique values
 
+- valid roles
 
-\- unique values
+- non-negative inventory
 
-\- valid roles
+- checkout idempotency
 
-\- non-negative inventory
-
-\- checkout idempotency
-
-
-
-\### Idempotency
-
-
+### Idempotency
 
 Repeated checkout requests with the same key cannot create duplicate orders.
 
-
-
-\### Concurrency Protection
-
-
+### Concurrency Protection
 
 Inventory updates prevent multiple concurrent customers from overselling the same product variant.
 
-
-
-\### Health Checks
-
-
+### Health Checks
 
 Actuator readiness and liveness endpoints support deployment orchestration.
 
-
-
-\### API Documentation
-
-
+### API Documentation
 
 OpenAPI/Swagger provides machine-readable and interactive API documentation.
 
-
-
-\### CI/CD
-
-
+### CI/CD
 
 GitHub Actions automatically validates backend and frontend changes before they are considered healthy.
 
+---
 
-
-\---
-
-
-
-\## Repository Structure
-
-
+## Repository Structure
 
 ```text
 
@@ -1670,180 +1178,156 @@ FashionSense/
 
 ```
 
+---
 
-
-\---
-
-
-
-\## Verified End-to-End Flows
-
-
+## Verified End-to-End Flows
 
 The following flows have been manually validated:
-
-
 
 ```text
 
 Authentication
 
-&#x20;       ↓
+        ↓
 
 Product Discovery
 
-&#x20;       ↓
+        ↓
 
 Category / Occasion Filtering
 
-&#x20;       ↓
+        ↓
 
 Product Detail
 
-&#x20;       ↓
+        ↓
 
 Cart
 
-&#x20;       ↓
+        ↓
 
 Wishlist
 
-&#x20;       ↓
+        ↓
 
 Promotion Code
 
-&#x20;       ↓
+        ↓
 
 Checkout
 
-&#x20;       ↓
+        ↓
 
 Inventory Update
 
-&#x20;       ↓
+        ↓
 
 Order Creation
 
-&#x20;       ↓
+        ↓
 
 Kafka Event
 
-&#x20;       ↓
+        ↓
 
 Order History
 
-&#x20;       ↓
+        ↓
 
 Order Detail
 
 ```
 
-
-
 Additional verified behavior includes:
 
+- checkout idempotency
 
+- out-of-stock protection
 
-\- checkout idempotency
+- inventory decrement
 
-\- out-of-stock protection
+- customer/admin RBAC
 
-\- inventory decrement
+- promotion calculations
 
-\- customer/admin RBAC
+- Redis connectivity
 
-\- promotion calculations
+- health endpoints
 
-\- Redis connectivity
+- OpenAPI documentation
 
-\- health endpoints
+- frontend production build
 
-\- OpenAPI documentation
+- backend automated tests
 
-\- frontend production build
+- GitHub Actions CI
 
-\- backend automated tests
+---
 
-\- GitHub Actions CI
-
-
-
-\---
-
-
-
-\## Future Enhancements
-
-
+## Future Enhancements
 
 Potential future improvements include:
 
+- S3-compatible product image storage
 
+- Gift cards
 
-\- S3-compatible product image storage
+- Real payment gateway integration
 
-\- Gift cards
+- Email delivery provider
 
-\- Real payment gateway integration
+- Recommendation engine
 
-\- Email delivery provider
+- Search engine integration
 
-\- Recommendation engine
+- Distributed tracing
 
-\- Search engine integration
+- Metrics dashboards
 
-\- Distributed tracing
+- Kubernetes deployment
 
-\- Metrics dashboards
+- Cloud deployment
 
-\- Kubernetes deployment
-
-\- Cloud deployment
-
-\- Dedicated microservices for selected domains
-
-
+- Dedicated microservices for selected domains
 
 Gift cards were intentionally removed from the current project scope and may be added later if needed.
 
+---
 
-
-\---
-
-
-
-\## Project Purpose
-
-
+## Project Purpose
 
 Fashion Sense was built as a portfolio-quality full-stack engineering project demonstrating practical implementation of:
 
+- backend development
 
+- frontend development
 
-\- backend development
+- relational database design
 
-\- frontend development
+- caching
 
-\- relational database design
+- asynchronous messaging
 
-\- caching
+- authentication and authorization
 
-\- asynchronous messaging
+- distributed-system concepts
 
-\- authentication and authorization
+- Docker infrastructure
 
-\- distributed-system concepts
+- testing
 
-\- Docker infrastructure
+- CI/CD
 
-\- testing
+- API design
 
-\- CI/CD
-
-\- API design
-
-\- production-oriented engineering practices
-
-
+- production-oriented engineering practices
 
 The goal is not simply to demonstrate individual technologies, but to show how they work together inside a realistic ecommerce architecture.
+
+## Audit, uploads and hosting
+
+See [the implementation audit](docs/resume-audit.md),
+[S3 image-upload API](docs/s3-images.md) and [hosting guide](docs/hosting.md).
+Run `./mvnw verify` (Windows: `.\mvnw.cmd verify`) for backend tests and
+JaCoCo reports under `backend/target/site/jacoco/`. GitHub Actions retains
+coverage and test reports as downloadable artifacts.
