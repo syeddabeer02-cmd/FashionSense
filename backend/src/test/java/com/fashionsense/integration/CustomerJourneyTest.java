@@ -227,6 +227,9 @@ class CustomerJourneyTest {
         request(body(post("/api/customers/me/checkout").header("Idempotency-Key", " "), """
                 {"addressId":%d,"shippingMethod":"STANDARD","paymentMethod":"CARD"}
                 """.formatted(address)), token, 400);
+        request(body(post("/api/customers/me/checkout").header("Idempotency-Key", "x".repeat(101)), """
+                {"addressId":%d,"shippingMethod":"STANDARD","paymentMethod":"CARD"}
+                """.formatted(address)), token, 400);
         request(body(post("/api/customers/me/checkout").header("Idempotency-Key", UUID.randomUUID().toString()), """
                 {"addressId":%d,"shippingMethod":"STANDARD","paymentMethod":"CARD"}
                 """.formatted(address)), token, 400);

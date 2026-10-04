@@ -150,7 +150,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             InvalidVerificationTokenException.class,
-            EmptyCartException.class
+            EmptyCartException.class,
+            IllegalArgumentException.class
     })
     public ResponseEntity<Map<String, Object>> handleBadRequest(
             RuntimeException ex,
